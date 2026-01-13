@@ -26,7 +26,7 @@ body = """
 {%- macro print_commit(commit) -%}
   - {% if commit.scope %}{{ commit.scope }}: {% endif %}\
     {{ commit.message | split(pat="\n") | first | trim }}\
-    {% if commit.remote.username %} by @{{ commit.remote.username }}{%- endif -%}
+    {% if commit.remote.username %} by `@{{ commit.remote.username }}`{%- endif -%}
     {% raw %}\n{% endraw -%}
 {%- endmacro -%}
 
@@ -53,18 +53,6 @@ body = """
     {% raw %}\n{% endraw -%}
   {%- endif -%}
 {%- endfor -%}
-
-{%- if github -%}
-  {%- if github.contributors | filter(attribute="is_first_time", value=true) | length != 0 -%}
-    ### ❤️ New Contributors{% raw %}\n\n{% endraw -%}
-    {%- for contributor in github.contributors | filter(attribute="is_first_time", value=true) -%}
-      * @{{ contributor.username }} made their first contribution\
-        {%- if contributor.pr_number %} in [#{{ contributor.pr_number }}]({{ self::remote_url() }}/pull/{{ contributor.pr_number }}) {%- endif -%}
-        {% raw %}\n{% endraw -%}
-    {%- endfor -%}
-    {% raw %}\n{% endraw -%}
-  {%- endif -%}
-{%- endif -%}
 """
 
 [git]

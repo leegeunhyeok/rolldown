@@ -1,4 +1,26 @@
 
+## [0.0.0-beta.1] - 2026-01-13
+
+### 🚀 Features
+
+- migrate common hmr runtime to es5 syntax (#2)
+- add option to avoid reserved identifiers in export binding names (#1)
+
+### 🐛 Bug Fixes
+
+- inline __name calls for default exports  (#7862) by @IWANABETHATGUY
+
+### ⚙️ Miscellaneous Tasks
+
+- update workflows
+- rolldown_binding: allow crate-type as lib (#7866) by @Brooooooklyn
+
+### ❤️ New Contributors
+
+* @IWANABETHATGUY made their first contribution in [#7862](https://github.com/rolldown/rolldown/pull/7862)
+* @Brooooooklyn made their first contribution in [#7866](https://github.com/rolldown/rolldown/pull/7866)
+
+
 ## [1.0.0-beta.59] - 2026-01-07
 
 ### 🚀 Features
