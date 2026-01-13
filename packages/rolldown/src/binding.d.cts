@@ -2126,6 +2126,7 @@ export interface BindingOutputOptions {
   topLevelVar?: boolean
   minifyInternalExports?: boolean
   cleanDir?: boolean
+  globalIdentifiers?: Array<string>
 }
 
 export interface BindingOutputs {

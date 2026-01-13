@@ -41,6 +41,7 @@ export function bindingifyOutputOptions(outputOptions: OutputOptions): BindingOu
     manualChunks,
     topLevelVar,
     cleanDir,
+    globalIdentifiers,
   } = outputOptions;
 
   // Validate inlineDynamicImports conflicts
@@ -103,6 +104,7 @@ export function bindingifyOutputOptions(outputOptions: OutputOptions): BindingOu
     topLevelVar,
     minifyInternalExports: outputOptions.minifyInternalExports,
     cleanDir,
+    globalIdentifiers,
   };
 }
 

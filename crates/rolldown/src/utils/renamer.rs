@@ -10,7 +10,7 @@ use rolldown_utils::{
   concat_string,
   rayon::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator},
 };
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 use std::borrow::Cow;
 use std::collections::hash_map::Entry;
 
@@ -55,22 +55,35 @@ pub struct Renamer<'name> {
 }
 
 impl<'name> Renamer<'name> {
-  pub fn new(symbols: &'name SymbolRefDb, format: OutputFormat) -> Self {
-    // Port from https://github.com/rollup/rollup/blob/master/src/Chunk.ts#L1377-L1394.
-    let mut manual_reserved = match format {
-      OutputFormat::Esm => vec![],
-      OutputFormat::Cjs => vec!["module", "require", "__filename", "__dirname", "exports"],
-      OutputFormat::Iife | OutputFormat::Umd => vec!["exports"], // Also for  AMD, but we don't support them yet.
+  pub fn new(
+    symbols: &'name SymbolRefDb,
+    format: OutputFormat,
+    global_identifiers: &[String],
+  ) -> Self {
+    let manual_reserved: FxHashSet<String> = {
+      // Port from https://github.com/rollup/rollup/blob/master/src/Chunk.ts#L1377-L1394.
+      let manual_reserved: &[&str] = match format {
+        OutputFormat::Esm => &[],
+        OutputFormat::Cjs => &["module", "require", "__filename", "__dirname", "exports"],
+        OutputFormat::Iife | OutputFormat::Umd => &["exports"], // Also for  AMD, but we don't support them yet.
+      };
+
+      manual_reserved
+        .iter()
+        // https://github.com/rollup/rollup/blob/bfbea66569491f5466fbba99de2ba6a0225f851b/src/Chunk.ts#L1359
+        .chain(["Object", "Promise"].iter())
+        .chain(RESERVED_KEYWORDS.iter())
+        .chain(GLOBAL_OBJECTS.iter())
+        .map(|&s| String::from(s))
+        .chain(global_identifiers.iter().cloned())
+        .collect()
     };
-    // https://github.com/rollup/rollup/blob/bfbea66569491f5466fbba99de2ba6a0225f851b/src/Chunk.ts#L1359
-    manual_reserved.extend(["Object", "Promise"]);
+
     Self {
       canonical_names: FxHashMap::default(),
       symbol_db: symbols,
       used_canonical_names: manual_reserved
         .iter()
-        .chain(RESERVED_KEYWORDS.iter())
-        .chain(GLOBAL_OBJECTS.iter())
         .map(|s| (CompactStr::new(s), CanonicalNameInfo::default()))
         .collect(),
     }

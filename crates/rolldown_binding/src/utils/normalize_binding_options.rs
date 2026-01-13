@@ -502,7 +502,8 @@ pub fn normalize_binding_options(
     tsconfig: input_options.tsconfig.map(|v| match v {
       Either::A(v) => TsConfig::Auto(v),
       Either::B(s) => TsConfig::Manual(s.into()),
-    })
+    }),
+    global_identifiers: output_options.global_identifiers,
   };
 
   #[cfg(not(target_family = "wasm"))]

@@ -561,6 +561,15 @@
               "type": "null"
             }
           ]
+        },
+        "globalIdentifiers": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
         }
       },
       "additionalProperties": false

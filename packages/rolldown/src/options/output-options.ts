@@ -675,6 +675,12 @@ export interface OutputOptions {
    * @default false
    */
   keepNames?: boolean;
+  /**
+   * Reserved global identifiers to be avoided when generating export binding names for module chunks.
+   *
+   * @default []
+   */
+  globalIdentifiers?: string[];
 }
 
 export type CodeSplittingGroup = {

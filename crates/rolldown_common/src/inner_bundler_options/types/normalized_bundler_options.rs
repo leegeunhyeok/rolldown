@@ -111,6 +111,7 @@ pub struct NormalizedBundlerOptions {
   pub minify_internal_exports: bool,
   pub clean_dir: bool,
   pub context: String,
+  pub global_identifiers: Vec<String>,
 }
 
 // This is only used for testing
@@ -186,6 +187,7 @@ impl Default for NormalizedBundlerOptions {
       minify_internal_exports: Default::default(),
       clean_dir: false,
       context: Default::default(),
+      global_identifiers: Default::default(),
     }
   }
 }
