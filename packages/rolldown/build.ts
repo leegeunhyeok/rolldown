@@ -238,7 +238,7 @@ if (!nativeBinding && globalThis.process?.versions?.["webcontainer"]) {
 function generateRuntimeTypes() {
   const inputFile = nodePath.resolve(
     __dirname,
-    '../../crates/rolldown_plugin_hmr/src/runtime/runtime-extra-dev-common.js',
+    '../../crates/rolldown_plugin_hmr/src/runtime/runtime-extra-dev-common-origin.js',
   );
   const outputFile = nodePath.resolve(buildMeta.buildOutputDir, 'experimental-runtime-types.d.ts');
 

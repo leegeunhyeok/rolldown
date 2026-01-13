@@ -1,11 +1,11 @@
 // @ts-check
 
-/** @type {typeof import('./runtime-extra-dev-common.js').DevRuntime} */
+/** @type {typeof import('./runtime-extra-dev-common-origin.js').DevRuntime} */
 // @ts-expect-error -- there's no way to declare a variable by JSDoc
 var BaseDevRuntime = DevRuntime;
 
-/** @typedef {import('./runtime-extra-dev-common.js').Messenger} Messenger */
-/** @typedef {import('./runtime-extra-dev-common.js').DevRuntimeMessage} DevRuntimeMessage */
+/** @typedef {import('./runtime-extra-dev-common-origin.js').Messenger} Messenger */
+/** @typedef {import('./runtime-extra-dev-common-origin.js').DevRuntimeMessage} DevRuntimeMessage */
 
 class ModuleHotContext {
   /**
