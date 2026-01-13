@@ -11,8 +11,8 @@ This plugin processes JSON files and transforms them into JavaScript modules. Th
 ## 🚀 Debug Usage
 
 ```js
-import { defineConfig } from 'rolldown';
-import { viteJsonPlugin } from 'rolldown/experimental';
+import { defineConfig } from '@rollipop/rolldown';
+import { viteJsonPlugin } from '@rollipop/rolldown/experimental';
 
 export default defineConfig({
   input: {

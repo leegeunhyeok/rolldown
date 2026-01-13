@@ -1,4 +1,4 @@
-import { defineConfig } from 'rolldown';
+import { defineConfig } from '@rollipop/rolldown';
 import esbuild from 'rollup-plugin-esbuild';
 
 export default defineConfig({

@@ -1,8 +1,8 @@
 import * as fs from 'node:fs';
 import * as path from 'path';
-import { RolldownOutput } from 'rolldown';
+import { RolldownOutput } from '@rollipop/rolldown';
 import { defineTest } from 'rolldown-tests';
-import { viteImportGlobPlugin } from 'rolldown/experimental';
+import { viteImportGlobPlugin } from '@rollipop/rolldown/experimental';
 import { expect } from 'vitest';
 
 export default defineTest({

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { RolldownWatcher } from 'rolldown';
-import { watch } from 'rolldown';
+import type { RolldownWatcher } from '@rollipop/rolldown';
+import { watch } from '@rollipop/rolldown';
 import { sleep, waitUtil } from 'rolldown-tests/utils';
 import { expect, onTestFinished, test, vi } from 'vitest';
 

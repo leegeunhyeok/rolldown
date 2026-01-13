@@ -12,6 +12,6 @@
     "styled-components": "^6.1.8"
   },
   "devDependencies": {
-    "rolldown": "workspace:*"
+    "@rollipop/rolldown": "workspace:*"
   }
 }

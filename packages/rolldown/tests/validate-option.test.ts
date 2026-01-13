@@ -1,4 +1,4 @@
-import { rolldown } from 'rolldown';
+import { rolldown } from '@rollipop/rolldown';
 import { expect, test, vi } from 'vitest';
 
 test('validate input option', async () => {

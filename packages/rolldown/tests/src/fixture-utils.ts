@@ -1,5 +1,5 @@
-import type { InputOptions } from 'rolldown';
-import { rolldown } from 'rolldown';
+import type { InputOptions } from '@rollipop/rolldown';
+import { rolldown } from '@rollipop/rolldown';
 import type { TestConfig } from './types';
 
 export async function compileFixture(fixturePath: string, config: TestConfig) {

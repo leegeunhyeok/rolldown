@@ -1,4 +1,4 @@
-import { defineConfig } from 'rolldown';
+import { defineConfig } from '@rollipop/rolldown';
 import IsolatedDecl from 'unplugin-isolated-decl/rolldown';
 
 export default defineConfig({

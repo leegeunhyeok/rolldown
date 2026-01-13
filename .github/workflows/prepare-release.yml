@@ -4,8 +4,6 @@ permissions: {}
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 0 * * 3' # Every Wednesday at 8am Shanghai time (UTC+8 = 00:00 UTC)
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}-${{ github.event.pull_request.number || github.sha }}
@@ -42,7 +40,7 @@ jobs:
       - run: just bump-packages ${VERSION}
 
       - name: Regenerate binding.js after version bump
-        run: pnpm --filter rolldown build-binding
+        run: pnpm --filter '@rollipop/rolldown' build-binding
 
       - name: Generate changelog via git cliff
         id: changelog
@@ -67,6 +65,5 @@ jobs:
           body: ${{ steps.changelog.outputs.content }}
           branch: release-v${{ env.VERSION }}
           branch-suffix: timestamp
-          base: main
+          base: rollipop
           title: 'release: v${{ env.VERSION }}'
-          assignees: Boshen, shulaoda

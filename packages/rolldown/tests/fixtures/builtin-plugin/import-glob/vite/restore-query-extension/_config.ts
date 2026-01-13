@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { defineTest } from 'rolldown-tests';
-import { viteImportGlobPlugin } from 'rolldown/experimental';
+import { viteImportGlobPlugin } from '@rollipop/rolldown/experimental';
 import { expect } from 'vitest';
 
 const root = path.join(path.dirname(path.resolve(import.meta.dirname)), 'fixtures');

@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { defineTest } from 'rolldown-tests';
-import { viteAssetImportMetaUrlPlugin } from 'rolldown/experimental';
+import { viteAssetImportMetaUrlPlugin } from '@rollipop/rolldown/experimental';
 import { expect } from 'vitest';
 
 export default defineTest({

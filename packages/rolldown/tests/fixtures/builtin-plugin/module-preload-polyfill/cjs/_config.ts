@@ -1,5 +1,5 @@
 import { defineTest } from 'rolldown-tests';
-import { viteModulePreloadPolyfillPlugin } from 'rolldown/experimental';
+import { viteModulePreloadPolyfillPlugin } from '@rollipop/rolldown/experimental';
 import { expect } from 'vitest';
 
 export default defineTest({

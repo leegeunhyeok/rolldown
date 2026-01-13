@@ -1,4 +1,4 @@
-import type { PreRenderedChunk } from 'rolldown';
+import type { PreRenderedChunk } from '@rollipop/rolldown';
 import { defineTest } from 'rolldown-tests';
 import { expect } from 'vitest';
 

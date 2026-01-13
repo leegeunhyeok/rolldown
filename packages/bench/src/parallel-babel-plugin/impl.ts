@@ -1,10 +1,10 @@
 import babel from '@babel/core';
 import nodePath from 'node:path';
-import type { Plugin } from 'rolldown';
+import type { Plugin } from '@rollipop/rolldown';
 import {
   defineParallelPluginImplementation,
   type ParallelPluginImplementation,
-} from 'rolldown/parallelPlugin';
+} from '@rollipop/rolldown/parallelPlugin';
 
 export const babelPlugin = (): Plugin => {
   const partialConfig = babel.loadPartialConfig({

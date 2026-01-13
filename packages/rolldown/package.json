@@ -1,6 +1,6 @@
 {
-  "name": "rolldown",
-  "version": "1.0.0-beta.59",
+  "name": "@rollipop/rolldown",
+  "version": "0.0.0-beta.0",
   "description": "Fast JavaScript/TypeScript bundler in Rust with Rollup-compatible API.",
   "keywords": [
     "bundler",
@@ -14,7 +14,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rolldown/rolldown.git",
+    "url": "git+https://github.com/leegeunhyeok/rolldown.git",
     "directory": "packages/rolldown"
   },
   "bin": {
@@ -114,12 +114,13 @@
   },
   "dependencies": {
     "@oxc-project/types": "catalog:",
-    "@rolldown/pluginutils": "workspace:*"
+    "@rollipop/rolldown-pluginutils": "workspace:*"
   },
   "devDependencies": {
     "@napi-rs/cli": "catalog:",
     "@napi-rs/wasm-runtime": "catalog:",
     "@oxc-node/cli": "catalog:",
+    "@rollipop/rolldown": "workspace:*",
     "@rollup/plugin-json": "catalog:",
     "buble": "catalog:",
     "consola": "catalog:",
@@ -128,7 +129,6 @@
     "oxc-parser": "catalog:",
     "pathe": "catalog:",
     "remeda": "catalog:",
-    "rolldown": "workspace:*",
     "rolldown-plugin-dts": "catalog:",
     "rollup": "catalog:",
     "signal-exit": "catalog:",
@@ -139,29 +139,17 @@
   "napi": {
     "binaryName": "rolldown-binding",
     "dtsHeader": "type MaybePromise<T> = T | Promise<T>\ntype Nullable<T> = T | null | undefined\ntype VoidNullable<T = void> = T | null | undefined | void\nexport type BindingStringOrRegex = string | RegExp\ntype BindingResult<T> = { errors: BindingError[], isBindingErrors: boolean } | T\n\n",
-    "packageName": "@rolldown/binding",
+    "packageName": "@rollipop/rolldown-binding",
     "targets": [
       "x86_64-apple-darwin",
       "x86_64-pc-windows-msvc",
       "x86_64-unknown-linux-gnu",
       "x86_64-unknown-linux-musl",
-      "x86_64-unknown-freebsd",
-      "armv7-unknown-linux-gnueabihf",
       "aarch64-unknown-linux-gnu",
       "aarch64-apple-darwin",
       "aarch64-unknown-linux-musl",
-      "aarch64-unknown-linux-ohos",
-      "aarch64-pc-windows-msvc",
-      "aarch64-linux-android",
-      "wasm32-wasip1-threads"
-    ],
-    "wasm": {
-      "initialMemory": 16384,
-      "browser": {
-        "fs": true,
-        "asyncInit": true
-      }
-    }
+      "aarch64-pc-windows-msvc"
+    ]
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

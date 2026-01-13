@@ -1,5 +1,5 @@
 import { defineTest } from 'rolldown-tests';
-import { viteImportGlobPlugin } from 'rolldown/experimental';
+import { viteImportGlobPlugin } from '@rollipop/rolldown/experimental';
 
 export default defineTest({
   config: {

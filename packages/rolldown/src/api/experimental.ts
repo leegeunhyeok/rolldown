@@ -16,7 +16,7 @@ export { freeExternalMemory } from '../types/external-memory-handle';
  *
  * @example To ensure cleanup of resources, use the returned promise to wait for the scan to complete.
  * ```ts
- * import { scan } from 'rolldown/api/experimental';
+ * import { scan } from '@rollipop/rolldown/api/experimental';
  *
  * const cleanupPromise = await scan(...);
  * await cleanupPromise;

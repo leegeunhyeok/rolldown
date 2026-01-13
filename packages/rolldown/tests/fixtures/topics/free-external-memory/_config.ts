@@ -1,5 +1,5 @@
 import { defineTest } from 'rolldown-tests';
-import { freeExternalMemory } from 'rolldown/experimental';
+import { freeExternalMemory } from '@rollipop/rolldown/experimental';
 import { expect } from 'vitest';
 
 export default defineTest({

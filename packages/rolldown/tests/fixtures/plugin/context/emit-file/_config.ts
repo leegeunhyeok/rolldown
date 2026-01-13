@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { PluginContext } from 'rolldown';
+import type { PluginContext } from '@rollipop/rolldown';
 import { defineTest } from 'rolldown-tests';
 import { getOutputAsset } from 'rolldown-tests/utils';
 import { expect } from 'vitest';

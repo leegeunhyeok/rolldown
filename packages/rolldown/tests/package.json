@@ -11,7 +11,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "rolldown": "workspace:*",
+    "@rollipop/rolldown": "workspace:*",
     "vite": "catalog:",
     "vitest": "catalog:"
   },

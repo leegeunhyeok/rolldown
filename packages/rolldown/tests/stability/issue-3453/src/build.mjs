@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { build } from 'rolldown';
+import { build } from '@rollipop/rolldown';
 import { parseImportMap, resolveModuleSpecifier } from './import-maps.js';
 import json from './map.json' with { type: 'json' };
 import { isWindows } from './util.js';

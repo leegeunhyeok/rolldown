@@ -3,7 +3,7 @@ import { defineTest } from 'rolldown-tests';
 import {
   viteDynamicImportVarsPlugin,
   viteImportGlobPlugin,
-} from 'rolldown/experimental';
+} from '@rollipop/rolldown/experimental';
 
 export default defineTest({
   config: {

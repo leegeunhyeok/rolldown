@@ -17,8 +17,8 @@ By default, it injects a polyfill for `rel="modulepreload"` into each entry modu
 ## 🚀 Debug Usage
 
 ```js
-import { defineConfig } from 'rolldown';
-import { viteModulePreloadPolyfillPlugin } from 'rolldown/experimental';
+import { defineConfig } from '@rollipop/rolldown';
+import { viteModulePreloadPolyfillPlugin } from '@rollipop/rolldown/experimental';
 
 export default defineConfig({
   input: {

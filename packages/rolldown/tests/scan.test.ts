@@ -1,4 +1,4 @@
-import { scan } from 'rolldown/experimental';
+import { scan } from '@rollipop/rolldown/experimental';
 import { describe, expect, test } from 'vitest';
 
 describe('experimental_scan', () => {

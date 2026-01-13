@@ -1,7 +1,7 @@
 import path from 'node:path';
-import { RolldownPlugin } from 'rolldown';
+import { RolldownPlugin } from '@rollipop/rolldown';
 import { defineTest } from 'rolldown-tests';
-import { viteLoadFallbackPlugin } from 'rolldown/experimental';
+import { viteLoadFallbackPlugin } from '@rollipop/rolldown/experimental';
 import { expect } from 'vitest';
 
 const entry = path.join(__dirname, './main.js');

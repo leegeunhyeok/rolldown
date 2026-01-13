@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { rolldown } from 'rolldown';
+import { rolldown } from '@rollipop/rolldown';
 import { expect, test } from 'vitest';
 
 const root = import.meta.dirname;

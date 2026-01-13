@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { defineTest } from 'rolldown-tests';
-import { viteDynamicImportVarsPlugin } from 'rolldown/experimental';
+import { viteDynamicImportVarsPlugin } from '@rollipop/rolldown/experimental';
 import { expect } from 'vitest';
 
 export default defineTest({

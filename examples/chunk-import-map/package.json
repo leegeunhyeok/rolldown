@@ -7,6 +7,6 @@
     "build": "pnpm rolldown -c ./rolldown.config.js"
   },
   "devDependencies": {
-    "rolldown": "workspace:*"
+    "@rollipop/rolldown": "workspace:*"
   }
 }

@@ -1,5 +1,5 @@
 import { defineTest } from 'rolldown-tests';
-import { viteAliasPlugin } from 'rolldown/experimental';
+import { viteAliasPlugin } from '@rollipop/rolldown/experimental';
 import { expect, vi } from 'vitest';
 
 const onLogFn = vi.fn();

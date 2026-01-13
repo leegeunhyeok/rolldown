@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { RenderedChunk } from 'rolldown';
+import { RenderedChunk } from '@rollipop/rolldown';
 import { defineTest } from 'rolldown-tests';
 import { expect, vi } from 'vitest';
 

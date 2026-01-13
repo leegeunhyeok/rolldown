@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { OutputChunk as RolldownOutputChunk } from 'rolldown';
+import type { OutputChunk as RolldownOutputChunk } from '@rollipop/rolldown';
 import { defineTest } from 'rolldown-tests';
 import { expect } from 'vitest';
 

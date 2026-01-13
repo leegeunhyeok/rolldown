@@ -1,7 +1,7 @@
 // Test if `freeExternalMemory` could be called satisfying the type requirements
 
-import { rolldown } from 'rolldown';
-import { freeExternalMemory } from 'rolldown/experimental';
+import { rolldown } from '@rollipop/rolldown';
+import { freeExternalMemory } from '@rollipop/rolldown/experimental';
 
 async function testFreeExternalMemory() {
   const build = await rolldown({

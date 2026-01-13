@@ -1,4 +1,4 @@
-import { defineParallelPluginImplementation } from 'rolldown/parallelPlugin';
+import { defineParallelPluginImplementation } from '@rollipop/rolldown/parallelPlugin';
 // @ts-expect-error
 import babel from '@babel/core';
 import nodePath from 'node:path';

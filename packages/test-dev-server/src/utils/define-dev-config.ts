@@ -1,4 +1,4 @@
-import type { BuildOptions } from 'rolldown';
+import type { BuildOptions } from '@rollipop/rolldown';
 import type { DevOptions } from '../types/dev-options';
 
 export interface DevConfig {

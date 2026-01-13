@@ -13,8 +13,8 @@ Since native ESM integration for WebAssembly is not yet supported, this plugin r
 ## 🚀 Debug Usage
 
 ```js
-import { defineConfig } from 'rolldown';
-import { viteWasmFallbackPlugin } from 'rolldown/experimental';
+import { defineConfig } from '@rollipop/rolldown';
+import { viteWasmFallbackPlugin } from '@rollipop/rolldown/experimental';
 
 export default defineConfig({
   input: {

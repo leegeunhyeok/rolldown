@@ -3,7 +3,7 @@ This option is particularly useful when the output directory structure may chang
 #### Examples
 
 ```js
-import { defineConfig } from 'rolldown';
+import { defineConfig } from '@rollipop/rolldown';
 
 export default defineConfig({
   input: ['src/module.js', `src/another/module.js`],

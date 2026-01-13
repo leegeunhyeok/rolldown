@@ -1,4 +1,4 @@
-import { parse, parseSync } from 'rolldown/experimental';
+import { parse, parseSync } from '@rollipop/rolldown/experimental';
 import { expect, test } from 'vitest';
 
 test('parse non json value', async () => {

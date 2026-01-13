@@ -1,5 +1,5 @@
 import { defineTest } from 'rolldown-tests';
-import { viteWasmHelperPlugin } from 'rolldown/experimental';
+import { viteWasmHelperPlugin } from '@rollipop/rolldown/experimental';
 import { expect } from 'vitest';
 
 export default defineTest({

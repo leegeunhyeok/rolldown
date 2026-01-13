@@ -29,8 +29,8 @@ export default (opts) => initWasm(opts, 'assets/module-HASH.wasm');
 ## 🚀 Debug Usage
 
 ```js
-import { defineConfig } from 'rolldown';
-import { viteWasmHelperPlugin } from 'rolldown/experimental';
+import { defineConfig } from '@rollipop/rolldown';
+import { viteWasmHelperPlugin } from '@rollipop/rolldown/experimental';
 
 export default defineConfig({
   input: {

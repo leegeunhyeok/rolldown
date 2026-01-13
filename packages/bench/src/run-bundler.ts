@@ -2,7 +2,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import * as esbuild from 'esbuild';
 import path from 'node:path';
-import * as rolldown from 'rolldown';
+import * as rolldown from '@rollipop/rolldown';
 import * as rollup from 'rollup';
 
 import type { BenchSuite, RolldownBenchSuite } from './types';

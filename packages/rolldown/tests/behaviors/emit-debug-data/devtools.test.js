@@ -1,4 +1,4 @@
-import { rolldown } from 'rolldown';
+import { rolldown } from '@rollipop/rolldown';
 
 import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';

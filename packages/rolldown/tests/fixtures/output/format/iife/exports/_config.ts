@@ -1,4 +1,4 @@
-import type { LogLevel, RollupLog } from 'rolldown';
+import type { LogLevel, RollupLog } from '@rollipop/rolldown';
 import { defineTest } from 'rolldown-tests';
 import { expect, vi } from 'vitest';
 

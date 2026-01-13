@@ -1,4 +1,4 @@
-import { rolldown } from 'rolldown';
+import { rolldown } from '@rollipop/rolldown';
 import { expect, test } from 'vitest';
 
 test('jsx false should report error', async () => {

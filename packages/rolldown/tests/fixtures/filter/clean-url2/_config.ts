@@ -1,7 +1,7 @@
 import { stripAnsi } from 'consola/utils';
 import * as path from 'node:path';
 import { defineTest } from 'rolldown-tests';
-import { id, include } from 'rolldown/filter';
+import { id, include } from '@rollipop/rolldown/filter';
 import { expect } from 'vitest';
 
 const postfixRE = /[?#].*$/;

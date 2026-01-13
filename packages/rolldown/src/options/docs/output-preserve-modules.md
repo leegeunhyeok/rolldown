@@ -7,7 +7,7 @@ It is therefore not recommended to blindly use this option to transform an entir
 You can do so dynamically, e.g., via the [`tinyglobby`](https://github.com/SuperchupuDev/tinyglobby) package:
 
 ```js
-import { defineConfig } from 'rolldown';
+import { defineConfig } from '@rollipop/rolldown';
 import { globSync } from 'tinyglobby';
 import path from 'node:path';
 

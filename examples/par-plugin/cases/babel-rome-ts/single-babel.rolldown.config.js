@@ -1,6 +1,6 @@
 import { builtinModules } from 'node:module';
 import nodePath from 'node:path';
-import { defineConfig } from 'rolldown';
+import { defineConfig } from '@rollipop/rolldown';
 import { babelPlugin } from '../../parallel-babel-plugin/impl.js';
 
 export const REPO_ROOT = nodePath.resolve(import.meta.dirname, '../../../..');

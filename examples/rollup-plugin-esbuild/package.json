@@ -9,6 +9,6 @@
     "rollup-plugin-esbuild": "^6.1.1"
   },
   "devDependencies": {
-    "rolldown": "workspace:*"
+    "@rollipop/rolldown": "workspace:*"
   }
 }

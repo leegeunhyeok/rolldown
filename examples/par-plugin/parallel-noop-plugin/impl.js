@@ -1,4 +1,4 @@
-import { defineParallelPluginImplementation } from 'rolldown/parallelPlugin';
+import { defineParallelPluginImplementation } from '@rollipop/rolldown/parallelPlugin';
 /** @returns {import('rolldown').Plugin} */
 export const noopPlugin = () => {
   return {

@@ -684,7 +684,7 @@ export type CodeSplittingGroup = {
    * For example,
    *
    * ```js
-   * import { defineConfig } from 'rolldown';
+   * import { defineConfig } from '@rollipop/rolldown';
    *
    * export default defineConfig({
    *   advancedChunks: {
@@ -710,7 +710,7 @@ export type CodeSplittingGroup = {
    * For example,
    *
    * ```js
-   * import { defineConfig } from 'rolldown';
+   * import { defineConfig } from '@rollipop/rolldown';
    *
    * export default defineConfig({
    *   advancedChunks: {
@@ -751,7 +751,7 @@ export type CodeSplittingGroup = {
    *
    * @example
    * ```js
-   * import { defineConfig } from 'rolldown';
+   * import { defineConfig } from '@rollipop/rolldown';
    *
    * export default defineConfig({
    *  advancedChunks: {

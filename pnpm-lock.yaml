@@ -254,6 +254,9 @@ importers:
       '@oxc-project/runtime':
         specifier: 'catalog:'
         version: 0.108.0
+      '@rollipop/rolldown':
+        specifier: workspace:*
+        version: link:packages/rolldown
       '@types/node':
         specifier: 'catalog:'
         version: 24.10.3
@@ -284,9 +287,6 @@ importers:
       remove-unused-vars:
         specifier: ^0.0.11
         version: 0.0.11
-      rolldown:
-        specifier: workspace:*
-        version: link:packages/rolldown
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -342,7 +342,7 @@ importers:
 
   examples/basic-typescript:
     devDependencies:
-      rolldown:
+      '@rollipop/rolldown':
         specifier: workspace:*
         version: link:../../packages/rolldown
 
@@ -352,13 +352,13 @@ importers:
         specifier: 'catalog:'
         version: 3.5.26(typescript@5.9.3)
     devDependencies:
-      rolldown:
+      '@rollipop/rolldown':
         specifier: workspace:*
         version: link:../../packages/rolldown
 
   examples/chunk-import-map:
     devDependencies:
-      rolldown:
+      '@rollipop/rolldown':
         specifier: workspace:*
         version: link:../../packages/rolldown
 
@@ -374,13 +374,13 @@ importers:
       '@rolldown/test-dev-server':
         specifier: workspace:*
         version: link:../../packages/test-dev-server
-      rolldown:
+      '@rollipop/rolldown':
         specifier: workspace:*
         version: link:../../packages/rolldown
 
   examples/isolated-decl:
     devDependencies:
-      rolldown:
+      '@rollipop/rolldown':
         specifier: workspace:*
         version: link:../../packages/rolldown
       unplugin-isolated-decl:
@@ -392,18 +392,18 @@ importers:
       '@rolldown/test-dev-server':
         specifier: workspace:*
         version: link:../../packages/test-dev-server
-      rolldown:
+      '@rollipop/rolldown':
         specifier: workspace:*
         version: link:../../packages/rolldown
 
   examples/native-magic-string:
     devDependencies:
+      '@rollipop/rolldown':
+        specifier: workspace:*
+        version: link:../../packages/rolldown
       oxc-walker:
         specifier: ^0.5.2
         version: 0.5.2(oxc-parser@0.108.0)
-      rolldown:
-        specifier: workspace:*
-        version: link:../../packages/rolldown
 
   examples/par-plugin:
     devDependencies:
@@ -416,7 +416,7 @@ importers:
       '@babel/preset-typescript':
         specifier: 'catalog:'
         version: 7.28.5(@babel/core@7.28.5)
-      rolldown:
+      '@rollipop/rolldown':
         specifier: workspace:*
         version: link:../../packages/rolldown
 
@@ -426,7 +426,7 @@ importers:
         specifier: ^6.1.1
         version: 6.2.1(esbuild@0.27.2)(rollup@4.55.1)
     devDependencies:
-      rolldown:
+      '@rollipop/rolldown':
         specifier: workspace:*
         version: link:../../packages/rolldown
 
@@ -442,7 +442,7 @@ importers:
         specifier: ^6.1.8
         version: 6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
     devDependencies:
-      rolldown:
+      '@rollipop/rolldown':
         specifier: workspace:*
         version: link:../../packages/rolldown
 
@@ -473,6 +473,9 @@ importers:
       '@oxc-node/cli':
         specifier: 'catalog:'
         version: 0.0.35
+      '@rollipop/rolldown':
+        specifier: workspace:*
+        version: link:../rolldown
       '@rollup/plugin-commonjs':
         specifier: 'catalog:'
         version: 29.0.0(rollup@4.55.1)
@@ -494,9 +497,6 @@ importers:
       lodash-es:
         specifier: 'catalog:'
         version: 4.17.22
-      rolldown:
-        specifier: workspace:*
-        version: link:../rolldown
       rollup:
         specifier: 'catalog:'
         version: 4.55.1
@@ -536,7 +536,7 @@ importers:
       '@oxc-project/types':
         specifier: 'catalog:'
         version: 0.108.0
-      '@rolldown/pluginutils':
+      '@rollipop/rolldown-pluginutils':
         specifier: workspace:*
         version: link:../pluginutils
     devDependencies:
@@ -549,6 +549,9 @@ importers:
       '@oxc-node/cli':
         specifier: 'catalog:'
         version: 0.0.35
+      '@rollipop/rolldown':
+        specifier: workspace:*
+        version: 'link:'
       '@rollup/plugin-json':
         specifier: 'catalog:'
         version: 6.1.0(rollup@4.55.1)
@@ -573,12 +576,9 @@ importers:
       remeda:
         specifier: 'catalog:'
         version: 2.33.1
-      rolldown:
-        specifier: workspace:*
-        version: 'link:'
       rolldown-plugin-dts:
         specifier: 'catalog:'
-        version: 0.20.0(oxc-resolver@11.16.2)(rolldown@packages+rolldown)(typescript@5.9.3)
+        version: 0.20.0(oxc-resolver@11.16.2)(rolldown@1.0.0-beta.53)(typescript@5.9.3)
       rollup:
         specifier: 'catalog:'
         version: 4.55.1
@@ -597,7 +597,7 @@ importers:
 
   packages/rolldown/tests:
     dependencies:
-      rolldown:
+      '@rollipop/rolldown':
         specifier: workspace:*
         version: link:..
       vite:
@@ -674,15 +674,15 @@ importers:
 
   packages/test-dev-server:
     dependencies:
+      '@rollipop/rolldown':
+        specifier: workspace:*
+        version: link:../rolldown
       '@types/ws':
         specifier: 'catalog:'
         version: 8.18.1
       connect:
         specifier: 'catalog:'
         version: 3.7.0
-      rolldown:
-        specifier: workspace:*
-        version: link:../rolldown
       serve-static:
         specifier: 'catalog:'
         version: 2.2.1
@@ -10718,7 +10718,7 @@ snapshots:
       glob: 13.0.0
       package-json-from-dist: 1.0.1
 
-  rolldown-plugin-dts@0.20.0(oxc-resolver@11.16.2)(rolldown@packages+rolldown)(typescript@5.9.3):
+  rolldown-plugin-dts@0.20.0(oxc-resolver@11.16.2)(rolldown@1.0.0-beta.53)(typescript@5.9.3):
     dependencies:
       '@babel/generator': 7.28.5
       '@babel/parser': 7.28.5
@@ -10728,7 +10728,7 @@ snapshots:
       dts-resolver: 2.1.3(oxc-resolver@11.16.2)
       get-tsconfig: 4.13.0
       obug: 2.1.1
-      rolldown: link:packages/rolldown
+      rolldown: 1.0.0-beta.53
     optionalDependencies:
       typescript: 5.9.3
     transitivePeerDependencies:

@@ -13,6 +13,6 @@
     "@babel/core": "catalog:",
     "@babel/preset-env": "catalog:",
     "@babel/preset-typescript": "catalog:",
-    "rolldown": "workspace:*"
+    "@rollipop/rolldown": "workspace:*"
   }
 }

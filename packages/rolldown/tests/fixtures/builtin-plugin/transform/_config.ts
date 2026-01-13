@@ -1,7 +1,7 @@
 import { stripAnsi } from 'consola/utils';
 import path from 'node:path';
 import { defineTest } from 'rolldown-tests';
-import { viteTransformPlugin } from 'rolldown/experimental';
+import { viteTransformPlugin } from '@rollipop/rolldown/experimental';
 import { expect } from 'vitest';
 
 export default defineTest({

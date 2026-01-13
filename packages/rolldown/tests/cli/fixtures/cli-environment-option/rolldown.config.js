@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { defineConfig } from 'rolldown';
+import { defineConfig } from '@rollipop/rolldown';
 
 export default defineConfig(() => {
   // Check that environment variables are set correctly

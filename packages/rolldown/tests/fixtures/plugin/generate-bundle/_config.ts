@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import type { OutputChunk as RolldownOutputChunk } from 'rolldown';
+import type { OutputChunk as RolldownOutputChunk } from '@rollipop/rolldown';
 import { defineTest } from 'rolldown-tests';
 import { getOutputChunk } from 'rolldown-tests/utils';
 import { expect } from 'vitest';

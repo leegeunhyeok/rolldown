@@ -12,7 +12,7 @@
     "build": "echo \"Use just build\"",
     "build:release": "echo \"Use just build native release\"",
     "test": "echo \"Use just test-node\"",
-    "ci:build-release-binding": "pnpm --filter rolldown run build-binding:release",
+    "ci:build-release-binding": "pnpm --filter '@rollipop/rolldown' run build-binding:release",
     "type-check": "tsc -b tsconfig.json",
     "docs": "pnpm --filter rolldown-docs run dev",
     "docs:build": "pnpm --filter rolldown-docs run generate && pnpm --filter rolldown-docs run build",
@@ -23,6 +23,7 @@
   "devDependencies": {
     "@oxc-node/core": "catalog:",
     "@oxc-project/runtime": "catalog:",
+    "@rollipop/rolldown": "workspace:*",
     "@types/node": "catalog:",
     "cjs-module-lexer": "^2.1.0",
     "husky": "^9.1.7",
@@ -33,7 +34,6 @@
     "oxlint-tsgolint": "0.11.0",
     "playwright-chromium": "^1.56.1",
     "remove-unused-vars": "^0.0.11",
-    "rolldown": "workspace:*",
     "typescript": "catalog:"
   },
   "lint-staged": {

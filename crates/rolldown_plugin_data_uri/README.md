@@ -30,7 +30,7 @@ console.log(msg); // -> hello from data URI
 If you want to specify the type of module, you can define `'module_ext': module_type`. For example, if you want to import files with ext `.png` as dataurl module.
 
 ```js
-import { defineConfig } from 'rolldown';
+import { defineConfig } from '@rollipop/rolldown';
 
 export default defineConfig({
   input: './index.js',

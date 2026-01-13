@@ -1,4 +1,4 @@
-import getLogFilter, { type RollupLog } from 'rolldown/getLogFilter';
+import getLogFilter, { type RollupLog } from '@rollipop/rolldown/getLogFilter';
 import { describe, expect, it } from 'vitest';
 
 describe('getLogFilter', () => {

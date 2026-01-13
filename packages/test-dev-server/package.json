@@ -20,9 +20,9 @@
     "test": "pnpm run --filter @rolldown/test-dev-server-tests test"
   },
   "dependencies": {
+    "@rollipop/rolldown": "workspace:*",
     "@types/ws": "catalog:",
     "connect": "catalog:",
-    "rolldown": "workspace:*",
     "serve-static": "catalog:",
     "ws": "catalog:"
   },

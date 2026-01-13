@@ -1,5 +1,5 @@
-import { build, rolldown } from 'rolldown';
-import { scan } from 'rolldown/experimental';
+import { build, rolldown } from '@rollipop/rolldown';
+import { scan } from '@rollipop/rolldown/experimental';
 import { describe, expect, test } from 'vitest';
 
 describe('Dev mode validation', () => {

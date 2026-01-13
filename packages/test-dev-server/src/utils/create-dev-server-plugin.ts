@@ -1,6 +1,6 @@
 import nodeFs from 'node:fs';
 import nodePath from 'node:path';
-import type { NormalizedInputOptions, Plugin } from 'rolldown';
+import type { NormalizedInputOptions, Plugin } from '@rollipop/rolldown';
 import type { NormalizedDevOptions } from '../types/normalized-dev-options';
 
 export function createDevServerPlugin(devOptions: NormalizedDevOptions): Plugin {

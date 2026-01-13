@@ -1,10 +1,12 @@
 const fs = require('node:fs');
 const childProcess = require('node:child_process');
 
-const rolldownPkg = JSON.parse(fs.readFileSync(require.resolve('rolldown/package.json'), 'utf-8'));
+const rolldownPkg = JSON.parse(
+  fs.readFileSync(require.resolve('@rollipop/rolldown/package.json'), 'utf-8'),
+);
 const version = rolldownPkg.version;
 const baseDir = `/tmp/rolldown-${version}`;
-const bindingEntry = `${baseDir}/node_modules/@rolldown/binding-wasm32-wasi/rolldown-binding.wasi.cjs`;
+const bindingEntry = `${baseDir}/node_modules/@rollipop/rolldown-binding/binding-wasm32-wasi/rolldown-binding.wasi.cjs`;
 
 if (!fs.existsSync(bindingEntry)) {
   const bindingPkg = `@rolldown/binding-wasm32-wasi@${version}`;

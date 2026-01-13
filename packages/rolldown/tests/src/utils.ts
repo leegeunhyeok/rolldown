@@ -6,7 +6,7 @@ import type {
   OutputAsset as RolldownOutputAsset,
   OutputChunk as RolldownOutputChunk,
   RolldownOutput as RollupOutput,
-} from 'rolldown';
+} from '@rollipop/rolldown';
 
 /**
  * @description

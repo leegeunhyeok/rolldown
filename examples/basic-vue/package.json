@@ -9,6 +9,6 @@
     "vue": "catalog:"
   },
   "devDependencies": {
-    "rolldown": "workspace:*"
+    "@rollipop/rolldown": "workspace:*"
   }
 }

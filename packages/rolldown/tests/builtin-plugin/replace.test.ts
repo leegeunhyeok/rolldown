@@ -1,4 +1,4 @@
-import { replacePlugin } from 'rolldown/plugins';
+import { replacePlugin } from '@rollipop/rolldown/plugins';
 import { expect, test } from 'vitest';
 
 test('error on invalid delimiters', () => {

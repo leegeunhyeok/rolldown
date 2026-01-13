@@ -1,5 +1,5 @@
 import { defineTest } from 'rolldown-tests';
-import { replacePlugin } from 'rolldown/plugins';
+import { replacePlugin } from '@rollipop/rolldown/plugins';
 
 export default defineTest({
   config: {

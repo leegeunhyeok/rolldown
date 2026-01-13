@@ -5,7 +5,7 @@ permissions: {}
 on:
   push:
     branches:
-      - main
+      - rollipop
     paths:
       - packages/rolldown/package.json
 
@@ -18,25 +18,26 @@ jobs:
     name: Check version
     runs-on: ubuntu-latest
     outputs:
-      version_changed: ${{ steps.version.outputs.changed }}
-      version: ${{ steps.version.outputs.version }}
+      version_changed: 'true'
+      version: '1.0.0-beta.0'
     steps:
       - uses: taiki-e/checkout-action@afad4df3ab3122b166e8226ac83be4d981fb64e8 # v1.3.2
 
-      - name: Check version changes
-        uses: EndBug/version-check@5102328418c0130d66ca712d755c303e93368ce2 # v2.1.7
-        id: version
-        with:
-          static-checking: localIsNew
-          file-url: https://unpkg.com/rolldown@latest/package.json
-          file-name: packages/rolldown/package.json
+      # For first release
+      # - name: Check version changes
+      #   uses: EndBug/version-check@5102328418c0130d66ca712d755c303e93368ce2 # v2.1.7
+      #   id: version
+      #   with:
+      #     static-checking: localIsNew
+      #     file-url: https://unpkg.com/@rollipop/rolldown@latest/package.json
+      #     file-name: packages/rolldown/package.json
 
-      - name: Print version
-        if: steps.version.outputs.changed == 'true'
-        env:
-          NEW_VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          echo "Version change found! New version: ${NEW_VERSION}"
+      # - name: Print version
+      #   if: steps.version.outputs.changed == 'true'
+      #   env:
+      #     NEW_VERSION: ${{ steps.version.outputs.version }}
+      #   run: |
+      #     echo "Version change found! New version: ${NEW_VERSION}"
 
   build:
     needs: check
@@ -46,7 +47,7 @@ jobs:
 
   publish:
     needs: build
-    if: github.repository == 'rolldown/rolldown'
+    if: github.repository == 'leegeunhyeok/rolldown'
     name: Publish npm Packages
     runs-on: ubuntu-latest
     permissions:
@@ -65,10 +66,10 @@ jobs:
           path: packages/rolldown/artifacts
 
       - name: Create rolldown/npm dirs
-        run: pnpm --filter rolldown exec napi create-npm-dirs
+        run: pnpm --filter '@rollipop/rolldown' exec napi create-npm-dirs
 
       - name: Move Binding Artifacts
-        run: pnpm --filter rolldown artifacts
+        run: pnpm --filter '@rollipop/rolldown' artifacts
 
       - name: List Rolldown Bindings
         run: ls -R ./packages/rolldown/npm
@@ -79,12 +80,6 @@ jobs:
         with:
           path: packages/rolldown/dist
           name: node-artifact
-
-      - name: Download `@rolldown/browser` Artifacts
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
-        with:
-          path: packages/browser/dist
-          name: browser-artifact
 
       - name: Download `@rolldown/debug` Artifacts
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
@@ -105,16 +100,16 @@ jobs:
 
       - name: Publish(Dry Run)
         run: |
-          pnpm publish -r --tag latest --dry-run --no-git-checks
+          pnpm publish -r --tag latest --dry-run --no-git-checks --filter '!@rolldown/browser'
 
       - name: Publish
         run: |
           npm install -g npm
-          pnpm publish -r --tag latest --no-git-checks
+          pnpm publish -r --tag latest --no-git-checks --filter '!@rolldown/browser'
 
   release:
     needs: [check, publish]
-    if: github.repository == 'rolldown/rolldown'
+    if: github.repository == 'leegeunhyeok/rolldown'
     name: GitHub Release
     runs-on: ubuntu-latest
     permissions:

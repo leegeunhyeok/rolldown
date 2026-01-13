@@ -1,5 +1,5 @@
 import { defineTest } from 'rolldown-tests';
-import { viteResolvePlugin } from 'rolldown/experimental';
+import { viteResolvePlugin } from '@rollipop/rolldown/experimental';
 import { expect, vi } from 'vitest';
 
 const fn = vi.fn();

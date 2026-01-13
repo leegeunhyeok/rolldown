@@ -1,7 +1,7 @@
 import type {
   OutputChunk as RolldownOutputChunk,
   PreRenderedChunk,
-} from 'rolldown';
+} from '@rollipop/rolldown';
 import { defineTest } from 'rolldown-tests';
 import { expect } from 'vitest';
 

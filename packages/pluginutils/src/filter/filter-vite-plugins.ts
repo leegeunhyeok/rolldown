@@ -9,7 +9,7 @@
  *
  * @example
  * ```ts
- * import { defineConfig } from 'rolldown';
+ * import { defineConfig } from '@rollipop/rolldown';
  * import { filterVitePlugins } from '@rolldown/pluginutils';
  * import viteReact from '@vitejs/plugin-react';
  *

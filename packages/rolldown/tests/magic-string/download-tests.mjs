@@ -171,18 +171,18 @@ function transformTestFile(content, filename) {
   // Replace imports
   transformed = transformed.replace(
     /import MagicString from ['"]\.\/utils\/IntegrityCheckingMagicString['"];?/g,
-    "import { BindingMagicString as MagicString } from 'rolldown';",
+    "import { BindingMagicString as MagicString } from '@rollipop/rolldown';",
   );
 
   transformed = transformed.replace(
     /import MagicString from ['"]\.\.\/src\/MagicString['"];?/g,
-    "import { BindingMagicString as MagicString } from 'rolldown';",
+    "import { BindingMagicString as MagicString } from '@rollipop/rolldown';",
   );
 
   // Handle Bundle import - Bundle is not supported, so we import MagicString and skip all Bundle tests
   transformed = transformed.replace(
     /import MagicString,\s*\{\s*Bundle\s*\}\s*from\s*['"]\.\.\/['"];?/g,
-    "import { BindingMagicString as MagicString } from 'rolldown';\n// Bundle is not supported in BindingMagicString\nconst Bundle = null;",
+    "import { BindingMagicString as MagicString } from '@rollipop/rolldown';\n// Bundle is not supported in BindingMagicString\nconst Bundle = null;",
   );
 
   // Handle SourceMap import - SourceMap class is not supported

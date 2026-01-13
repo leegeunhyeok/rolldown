@@ -34,7 +34,7 @@ export interface ExternalMemoryHandle {
  *
  * @example
  * ```typescript
- * import { freeExternalMemory } from 'rolldown/experimental';
+ * import { freeExternalMemory } from '@rollipop/rolldown/experimental';
  *
  * const output = await bundle.generate();
  * const chunk = output.output[0];

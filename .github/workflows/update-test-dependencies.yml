@@ -3,9 +3,6 @@ name: Update Test Dependencies
 permissions: {}
 
 on:
-  schedule:
-    # Run weekly on Tuesday at 00:00 UTC
-    - cron: '0 0 * * 2'
   workflow_dispatch:
     inputs:
       rollup_tag:

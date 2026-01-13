@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { rolldown } from 'rolldown';
+import { rolldown } from '@rollipop/rolldown';
 import { expect, test } from 'vitest';
 
 test('rolldown write twice', async () => {

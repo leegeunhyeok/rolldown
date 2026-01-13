@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 import { defineTest } from 'rolldown-tests';
-import { include, queries } from 'rolldown/filter';
+import { include, queries } from '@rollipop/rolldown/filter';
 import { expect, vi } from 'vitest';
 
 const cb = vi.fn();

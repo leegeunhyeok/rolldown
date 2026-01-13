@@ -1,5 +1,5 @@
 import { defineTest } from 'rolldown-tests';
-import { viteJsonPlugin } from 'rolldown/experimental';
+import { viteJsonPlugin } from '@rollipop/rolldown/experimental';
 import { expect } from 'vitest';
 
 export default defineTest({

@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { defineTest } from 'rolldown-tests';
-import { viteAssetPlugin, viteWasmHelperPlugin } from 'rolldown/experimental';
+import { viteAssetPlugin, viteWasmHelperPlugin } from '@rollipop/rolldown/experimental';
 import { expect } from 'vitest';
 
 const root = path.resolve(import.meta.dirname);

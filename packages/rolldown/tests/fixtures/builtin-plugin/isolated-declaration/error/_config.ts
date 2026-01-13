@@ -1,7 +1,7 @@
 import { stripAnsi } from 'consola/utils';
 import path from 'node:path';
 import { defineTest } from 'rolldown-tests';
-import { isolatedDeclarationPlugin } from 'rolldown/experimental';
+import { isolatedDeclarationPlugin } from '@rollipop/rolldown/experimental';
 import { expect } from 'vitest';
 
 export default defineTest({

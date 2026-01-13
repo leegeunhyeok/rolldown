@@ -6,6 +6,6 @@
     "build": "rolldown --config ./rolldown.config.js"
   },
   "devDependencies": {
-    "rolldown": "workspace:*"
+    "@rollipop/rolldown": "workspace:*"
   }
 }

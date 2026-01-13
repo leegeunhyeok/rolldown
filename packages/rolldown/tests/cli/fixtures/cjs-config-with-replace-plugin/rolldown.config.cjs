@@ -1,5 +1,5 @@
-const rolldown = require('rolldown');
-const plugin = require('rolldown/plugins');
+const rolldown = require('@rollipop/rolldown');
+const plugin = require('@rollipop/rolldown/plugins');
 
 module.exports = rolldown.defineConfig({
   input: './index.js',

@@ -6,7 +6,7 @@
     "build": "rolldown --config ./rolldown.config.js"
   },
   "devDependencies": {
-    "rolldown": "workspace:*",
+    "@rollipop/rolldown": "workspace:*",
     "unplugin-isolated-decl": "^0.8.1"
   }
 }

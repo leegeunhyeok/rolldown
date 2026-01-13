@@ -9,7 +9,7 @@
         "@oxc-project/runtime",
         "cjs-module-lexer",
         "remove-unused-vars",
-        "rolldown",
+        "@rollipop/rolldown",
       ],
     },
     "crates/rolldown/tests/rolldown/topics/npm_packages": {

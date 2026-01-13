@@ -9,6 +9,6 @@
   "dependencies": {},
   "devDependencies": {
     "@rolldown/test-dev-server": "workspace:*",
-    "rolldown": "workspace:*"
+    "@rollipop/rolldown": "workspace:*"
   }
 }

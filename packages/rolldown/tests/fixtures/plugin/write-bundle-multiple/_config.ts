@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import type { InternalModuleFormat, NormalizedOutputOptions } from 'rolldown';
+import type { InternalModuleFormat, NormalizedOutputOptions } from '@rollipop/rolldown';
 import { defineTest } from 'rolldown-tests';
 import { expect } from 'vitest';
 

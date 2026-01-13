@@ -1,4 +1,4 @@
-import { rolldown } from 'rolldown';
+import { rolldown } from '@rollipop/rolldown';
 import { expect, test } from 'vitest';
 
 test('propagate augmentChunkHash to parent chunks', async () => {

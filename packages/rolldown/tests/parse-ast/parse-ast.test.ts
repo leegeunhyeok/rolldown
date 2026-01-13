@@ -1,4 +1,4 @@
-import { parseAst, parseAstAsync } from 'rolldown/parseAst';
+import { parseAst, parseAstAsync } from '@rollipop/rolldown/parseAst';
 import { expect, test } from 'vitest';
 
 test('rolldown/parseAst parseSync', async () => {

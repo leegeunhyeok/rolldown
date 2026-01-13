@@ -81,7 +81,7 @@ import * as binding from './binding.cjs';
  *
  * @example
  * ```typescript
- * import { memfs } from 'rolldown/experimental';
+ * import { memfs } from '@rollipop/rolldown/experimental';
  *
  * // Write files to virtual filesystem before bundling
  * memfs?.volume.fromJSON({

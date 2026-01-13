@@ -1,6 +1,6 @@
-import { RolldownPluginOption } from 'rolldown';
+import { RolldownPluginOption } from '@rollipop/rolldown';
 import { defineTest } from 'rolldown-tests';
-import { withFilter } from 'rolldown/filter';
+import { withFilter } from '@rollipop/rolldown/filter';
 import { expect, vi } from 'vitest';
 
 const transformFn = vi.fn();

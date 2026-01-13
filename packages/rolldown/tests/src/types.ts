@@ -1,4 +1,4 @@
-import type { OutputOptions, RolldownOptions, RolldownOutput } from 'rolldown';
+import type { OutputOptions, RolldownOptions, RolldownOutput } from '@rollipop/rolldown';
 
 export type WithoutValue = 0;
 type OutputOptsToOutputInner<OutputOpts extends undefined | OutputOptions | OutputOptions[]> =
@@ -32,4 +32,4 @@ export interface TestConfig<
   catchError?: (err: unknown) => Promise<void> | void;
 }
 
-export type { Plugin } from 'rolldown';
+export type { Plugin } from '@rollipop/rolldown';

@@ -1,4 +1,4 @@
-import { InputOptions } from 'rolldown';
+import { InputOptions } from '@rollipop/rolldown';
 import { defineTest } from 'rolldown-tests';
 
 const pluginA = {

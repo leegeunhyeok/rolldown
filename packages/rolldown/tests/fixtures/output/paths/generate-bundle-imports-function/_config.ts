@@ -1,4 +1,4 @@
-import type { OutputChunk, RenderedChunk } from 'rolldown';
+import type { OutputChunk, RenderedChunk } from '@rollipop/rolldown';
 import { defineTest } from 'rolldown-tests';
 import { expect } from 'vitest';
 

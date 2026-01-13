@@ -1,6 +1,6 @@
 // @ts-nocheck
 import assert from 'node:assert';
-import { BindingMagicString as MagicString } from 'rolldown';
+import { BindingMagicString as MagicString } from '@rollipop/rolldown';
 import { describe, it } from 'vitest';
 
 describe('MagicString', () => {

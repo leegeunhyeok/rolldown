@@ -11,8 +11,8 @@ This plugin provides a fallback mechanism for module IDs with query (`?`) or has
 ## 🚀 Debug Usage
 
 ```js
-import { defineConfig } from 'rolldown';
-import { viteLoadFallbackPlugin } from 'rolldown/experimental';
+import { defineConfig } from '@rollipop/rolldown';
+import { viteLoadFallbackPlugin } from '@rollipop/rolldown/experimental';
 
 export default defineConfig({
   input: {

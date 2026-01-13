@@ -12,8 +12,8 @@ and outputs a manifest JSON. Useful for server-side rendering or asset injection
 ## 🚀 Debug Usage
 
 ```js
-import { defineConfig } from 'rolldown';
-import { viteManifestPlugin } from 'rolldown/experimental';
+import { defineConfig } from '@rollipop/rolldown';
+import { viteManifestPlugin } from '@rollipop/rolldown/experimental';
 
 export default defineConfig({
   input: {

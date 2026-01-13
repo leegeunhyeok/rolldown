@@ -1,4 +1,4 @@
-import type { OutputOptions } from 'rolldown';
+import type { OutputOptions } from '@rollipop/rolldown';
 import type { TestConfig, WithoutValue } from './types';
 
 export function defineTest<

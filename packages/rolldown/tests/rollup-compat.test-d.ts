@@ -3,7 +3,7 @@ import {
   type InputOptions,
   type OutputOptions,
   type Plugin as RolldownRawPlugin,
-} from 'rolldown';
+} from '@rollipop/rolldown';
 import type { Plugin as RollupPlugin } from 'rollup';
 import { describe, expectTypeOf, test } from 'vitest';
 

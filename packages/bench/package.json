@@ -18,6 +18,7 @@
     "@babel/preset-env": "catalog:",
     "@babel/preset-typescript": "catalog:",
     "@oxc-node/cli": "catalog:",
+    "@rollipop/rolldown": "workspace:*",
     "@rollup/plugin-commonjs": "catalog:",
     "@rollup/plugin-node-resolve": "catalog:",
     "@types/babel__core": "catalog:",
@@ -25,7 +26,6 @@
     "chalk": "catalog:",
     "esbuild": "catalog:",
     "lodash-es": "catalog:",
-    "rolldown": "workspace:*",
     "rollup": "catalog:",
     "tinybench": "catalog:"
   }

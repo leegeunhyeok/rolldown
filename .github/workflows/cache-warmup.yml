@@ -5,12 +5,12 @@ permissions: {}
 on:
   push:
     branches:
-      - main
+      - rollipop
     paths:
       - '**/*.rs'
       - 'Cargo.lock'
 
-# Only do cache warmup on main branch's latest commit
+# Only do cache warmup on rollipop branch's latest commit
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -28,7 +28,7 @@ jobs:
       - name: Setup Rust
         uses: oxc-project/setup-rust@c8224157c0bf235aabc633e8cd50d344f087a7de # v1.0.12
         with:
-          save-cache: ${{ github.ref_name == 'main' }}
+          save-cache: ${{ github.ref_name == 'rollipop' }}
           cache-key: debug-build
           tools: just
 
@@ -51,7 +51,7 @@ jobs:
         uses: oxc-project/setup-rust@c8224157c0bf235aabc633e8cd50d344f087a7de # v1.0.12
         with:
           cache-key: release-build
-          save-cache: ${{ github.ref_name == 'main' }}
+          save-cache: ${{ github.ref_name == 'rollipop' }}
           tools: just
 
       - uses: oxc-project/setup-node@8958a8e040102244b619c4a94fccb657a44b1c21 # v1.0.6
@@ -71,7 +71,7 @@ jobs:
         uses: oxc-project/setup-rust@c8224157c0bf235aabc633e8cd50d344f087a7de # v1.0.12
         with:
           cache-key: debug-build-wasi
-          save-cache: ${{ github.ref_name == 'main' }}
+          save-cache: ${{ github.ref_name == 'rollipop' }}
 
       - name: Add WASI target
         run: rustup target add wasm32-wasip1-threads

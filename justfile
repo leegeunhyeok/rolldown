@@ -167,34 +167,34 @@ build: build-pluginutils build-rolldown
 
 # Build `@rolldown/debug` located in `packages/debug`.
 build-rolldown-debug:
-  pnpm run --filter "@rolldown/debug" build
+  pnpm run --filter "@rollipop/rolldown-debug" build
 
 # Only build `rolldown` located in `packages/rolldown` itself without triggering building binding `crates/rolldown_binding`.
 build-glue:
-  pnpm run --filter rolldown build-js-glue
+  pnpm run --filter "@rollipop/rolldown" build-js-glue
 
 # Only build `.node` binding located in `packages/rolldown`.
 build-rolldown-binding:
-  pnpm run --filter rolldown build-binding
+  pnpm run --filter "@rollipop/rolldown" build-binding
 
 # Build `rolldown` located in `packages/rolldown` itself and its `.node` binding.
 build-rolldown: build-pluginutils
-  pnpm run --filter rolldown build-native:debug
+  pnpm run --filter "@rollipop/rolldown" build-native:debug
 
 # Build `rolldown` located in `packages/rolldown` itself and its `.wasm` binding for WASI.
 build-rolldown-wasi: build-pluginutils
-  pnpm run --filter rolldown build-wasi:debug
+  pnpm run --filter "@rollipop/rolldown" build-wasi:debug
 
 # Build `rolldown` located in `packages/rolldown` itself and its `.node` binding in release mode.
 build-rolldown-release: build-pluginutils
-  pnpm run --filter rolldown build-native:release
+  pnpm run --filter "@rollipop/rolldown" build-native:release
 
 # Build `rolldown` located in `packages/rolldown` itself and its `.node` binding in profile mode.
 build-rolldown-profile:
-  pnpm run --filter rolldown build-native:profile
+  pnpm run --filter "@rollipop/rolldown" build-native:profile
 
 build-rolldown-memory-profile:
-  pnpm run --filter rolldown build-native:memory-profile
+  pnpm run --filter "@rollipop/rolldown" build-native:memory-profile
 
 # Build `@rolldown/browser` located in `packages/browser` itself and its `.wasm` binding.
 build-browser: build-pluginutils
@@ -206,7 +206,7 @@ build-browser-release: build-pluginutils
 
 # Build `@rolldown/pluginutils` located in `packages/pluginutils`.
 build-pluginutils:
-  pnpm run --filter "@rolldown/pluginutils" build
+  pnpm run --filter "@rollipop/rolldown-pluginutils" build
 
 # Build `@rolldown/test-dev-server` located in `packages/test-dev-server`.
 build-test-dev-server:
