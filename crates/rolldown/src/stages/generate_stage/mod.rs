@@ -145,6 +145,7 @@ impl<'a> GenerateStage<'a> {
           self.options.format,
           &index_chunk_id_to_name,
           &module_scope_symbol_id_map,
+          &self.options.global_identifiers,
         );
       });
     });
