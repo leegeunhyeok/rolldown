@@ -112,10 +112,6 @@ export class DevRuntime {
   /** @internal */
   __reExport = __reExport;
 
-  /**
-   * Should set `initialized` to `true` after the `HMRClient` is initialized.
-   */
-  initialized = false;
   cache = /** @type {string[]} */ ([]);
   timeout = /** @type {NodeJS.Timeout | null} */ (null);
   timeoutSetLength = 0;
@@ -132,9 +128,6 @@ export class DevRuntime {
         return;
       }
       self.cache.push(module);
-      if (!self.initialized) {
-        return;
-      }
       this.timeout = safetyInvokeWithSetTimeout(self.flush.bind(this));
     };
   })();
