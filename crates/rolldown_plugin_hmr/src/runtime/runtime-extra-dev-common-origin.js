@@ -112,10 +112,16 @@ export class DevRuntime {
   /** @internal */
   __reExport = __reExport;
 
+  /**
+   * Should set `initialized` to `true` after the `HMRClient` is initialized.
+   */
+  initialized = false;
+  cache = /** @type {string[]} */ ([]);
+  timeout = /** @type {NodeJS.Timeout | null} */ (null);
+  timeoutSetLength = 0;
+
+  /** @type {(module: string) => void} */
   sendModuleRegisteredMessage = (() => {
-    const cache = /** @type {string[]} */ ([]);
-    let timeout = /** @type {NodeJS.Timeout | null} */ (null);
-    let timeoutSetLength = 0;
     const self = this;
 
     /**
@@ -125,28 +131,44 @@ export class DevRuntime {
       if (!self.messenger) {
         return;
       }
-      cache.push(module);
-      if (!timeout) {
-        timeout = setTimeout(
-          /** @returns void */
-          function flushCache() {
-            if (cache.length > timeoutSetLength) {
-              timeout = setTimeout(flushCache);
-              timeoutSetLength = cache.length;
-              return;
-            }
-
-            self.messenger.send({
-              type: 'hmr:module-registered',
-              modules: cache,
-            });
-            cache.length = 0;
-            timeout = null;
-            timeoutSetLength = 0;
-          },
-        );
-        timeoutSetLength = cache.length;
+      self.cache.push(module);
+      if (!self.initialized) {
+        return;
       }
+      this.timeout = safetyInvokeWithSetTimeout(self.flush.bind(this));
     };
   })();
+
+  flush() {
+    if (this.cache.length > this.timeoutSetLength) {
+      this.timeoutSetLength = this.cache.length;
+      this.timeout = safetyInvokeWithSetTimeout(this.flush.bind(this));
+      return;
+    }
+
+    this.messenger.send({
+      type: 'hmr:module-registered',
+      modules: this.cache,
+    });
+    this.cache.length = 0;
+    this.timeoutSetLength = 0;
+    this.timeout = null;
+  }
+}
+
+/**
+ * In lower React Native versions, `setTimeout` is cannot be used in `rolldown:hmr` initialization phase because `InitializeCore` of React Native is not evaluated yet.
+ * 
+ * `rolldown:hmr` -> `InitializeCore` -> Define polyfills (e.g, `setTimeout`)
+ *
+ * @param {() => void} fn 
+ */
+function safetyInvokeWithSetTimeout(fn) {
+  if (typeof setTimeout === 'function') {
+    return setTimeout(fn);
+  }
+
+  fn();
+
+  return null;
 }
