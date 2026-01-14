@@ -40,10 +40,14 @@ var Module = /*#__PURE__*/ function() {
   ]);
   return Module;
 }();
+/**
+* @typedef {{ type: 'hmr:module-registered', modules: string[] }} DevRuntimeMessage
+* @typedef {{ send(message: DevRuntimeMessage): void }} Messenger
+*/
 /** @type {typeof import('./runtime-extra-dev-common-origin.js').DevRuntime} */
 export var DevRuntime = /*#__PURE__*/ function() {
   "use strict";
-  function DevRuntime(messenger) {
+  function DevRuntime(messenger, clientId) {
       var _this = this;
       _class_call_check(this, DevRuntime);
       /**
@@ -100,6 +104,7 @@ export var DevRuntime = /*#__PURE__*/ function() {
           };
       }();
       this.messenger = messenger;
+      this.clientId = clientId;
   }
   _create_class(DevRuntime, [
       {

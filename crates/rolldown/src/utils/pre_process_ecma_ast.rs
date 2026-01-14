@@ -1,6 +1,5 @@
 use std::path::Path;
 
-use itertools::Itertools;
 use oxc::ast::ast::Program;
 use oxc::ast_visit::VisitMut;
 use oxc::diagnostics::Severity as OxcSeverity;
@@ -13,7 +12,7 @@ use oxc::transformer_plugins::{
 
 use rolldown_common::NormalizedBundlerOptions;
 use rolldown_ecmascript::{EcmaAst, WithMutFields};
-use rolldown_error::{BatchedBuildDiagnostic, BuildDiagnostic, BuildResult, Severity};
+use rolldown_error::{BatchedBuildDiagnostic, BuildDiagnostic, BuildResult, EventKind, Severity};
 
 use crate::types::oxc_parse_type::OxcParseType;
 
@@ -67,13 +66,20 @@ impl PreProcessEcmaAst {
       semantic_ret.errors.into_iter().partition(|w| w.severity == OxcSeverity::Error);
 
     let mut warnings = if errors.is_empty() {
-      BuildDiagnostic::from_oxc_diagnostics(warnings, &source, resolved_id, &Severity::Warning)
+      BuildDiagnostic::from_oxc_diagnostics(
+        warnings,
+        &source,
+        resolved_id,
+        &Severity::Warning,
+        EventKind::ParseError,
+      )
     } else {
       return Err(BuildDiagnostic::from_oxc_diagnostics(
         errors,
         &source,
         resolved_id,
         &Severity::Error,
+        EventKind::ParseError,
       ))?;
     };
 
@@ -102,24 +108,28 @@ impl PreProcessEcmaAst {
           .transform_options
           .options_for_file(is_not_js.then_some(Path::new(resolved_id)), &mut warnings)?;
 
-        let scoping = self.recreate_scoping(&mut scoping, program, false);
+        let scoping = self.recreate_scoping(&mut scoping, program);
         let ret = Transformer::new(allocator, Path::new(stable_id), &transform_options)
           .build_with_scoping(scoping, program);
-        // TODO: emit diagnostic, aiming to pass more tests,
-        // we ignore warning for now
-        if ret.errors.iter().any(|error| error.severity == OxcSeverity::Error) {
-          let errors = ret
-            .errors
-            .into_iter()
-            .filter(|item| matches!(item.severity, OxcSeverity::Error))
-            .collect_vec();
+
+        let (errors, transformer_warnings): (Vec<_>, Vec<_>) =
+          ret.errors.into_iter().partition(|error| error.severity == OxcSeverity::Error);
+        if !errors.is_empty() {
           return Err(BatchedBuildDiagnostic::from(BuildDiagnostic::from_oxc_diagnostics(
             errors,
             &source,
             resolved_id,
             &Severity::Error,
+            EventKind::TransformError,
           )));
         }
+        warnings.extend(BuildDiagnostic::from_oxc_diagnostics(
+          transformer_warnings,
+          &source,
+          resolved_id,
+          &Severity::Warning,
+          EventKind::ToleratedTransform,
+        ));
         Ok(())
       })?;
     }
@@ -127,7 +137,7 @@ impl PreProcessEcmaAst {
     // Step 4: Run inject plugin.
     if !bundle_options.inject.is_empty() {
       ast.program.with_mut(|WithMutFields { program, allocator, .. }| {
-        let new_scoping = self.recreate_scoping(&mut scoping, program, false);
+        let new_scoping = self.recreate_scoping(&mut scoping, program);
         let inject_config = bundle_options.oxc_inject_global_variables_config.clone();
         let ret = InjectGlobalVariables::new(allocator, inject_config).build(new_scoping, program);
         if !ret.changed {
@@ -140,7 +150,7 @@ impl PreProcessEcmaAst {
     // Avoid DCE for lazy export.
     if bundle_options.treeshake.is_some() && !has_lazy_export {
       ast.program.with_mut(|WithMutFields { program, allocator, .. }| {
-        let scoping = self.recreate_scoping(&mut scoping, program, false);
+        let scoping = self.recreate_scoping(&mut scoping, program);
         // NOTE: `CompressOptions::dead_code_elimination` will remove `ParenthesizedExpression`s from the AST.
         let options = CompressOptions {
           target: bundle_options.transform_options.target.clone(),
@@ -155,24 +165,17 @@ impl PreProcessEcmaAst {
     let scoping = ast.program.with_mut(|WithMutFields { program, allocator, .. }| {
       let mut pre_processor = PreProcessor::new(allocator, bundle_options.keep_names);
       pre_processor.visit_program(program);
-      self.recreate_scoping(&mut None, program, true)
+      self.recreate_scoping(&mut None, program)
     });
 
     Ok(ParseToEcmaAstResult { ast, scoping, has_lazy_export, warnings })
   }
 
-  fn recreate_scoping(
-    &mut self,
-    scoping: &mut Option<Scoping>,
-    program: &Program<'_>,
-    with_scope_tree_child_ids: bool,
-  ) -> Scoping {
+  fn recreate_scoping(&mut self, scoping: &mut Option<Scoping>, program: &Program<'_>) -> Scoping {
     if let Some(scoping) = scoping.take() {
       return scoping;
     }
     let ret = SemanticBuilder::new()
-      // Required by `module.scope.get_child_ids` in `crates/rolldown/src/utils/renamer.rs`.
-      .with_scope_tree_child_ids(with_scope_tree_child_ids)
       // Preallocate memory for the underlying data structures.
       .with_stats(self.stats)
       .build(program)
