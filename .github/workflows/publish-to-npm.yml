@@ -51,6 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write # for `npm publish --provenance`
+      contents: write # for `git push`
     steps:
       - uses: taiki-e/checkout-action@afad4df3ab3122b166e8226ac83be4d981fb64e8 # v1.3.2
 
