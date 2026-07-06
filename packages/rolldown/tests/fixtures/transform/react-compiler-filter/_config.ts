@@ -5,11 +5,12 @@ import { expect } from 'vitest';
 export default defineTest({
   config: {
     input: 'main.tsx',
-    external: ['react', 'react/compiler-runtime'],
+    external: ['react', 'react/compiler-runtime', 'react/jsx-runtime'],
     transform: {
-      jsx: 'preserve',
-      reactCompiler: {
-        exclude: [/(^|[/\\])node_modules[/\\]/],
+      jsx: {
+        compiler: {
+          exclude: [/(^|[/\\])node_modules[/\\]/],
+        },
       },
     },
   },

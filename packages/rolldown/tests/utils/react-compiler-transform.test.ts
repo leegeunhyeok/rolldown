@@ -17,8 +17,9 @@ describe('enhanced transform react compiler', () => {
 
   it('should enable React Compiler with default options', async () => {
     const result = await transform('Counter.tsx', code, {
-      jsx: 'preserve',
-      reactCompiler: {},
+      jsx: {
+        compiler: {},
+      },
     });
     expect(result.errors).toHaveLength(0);
     expect(result.code).toContain('from "react/compiler-runtime"');
@@ -27,9 +28,10 @@ describe('enhanced transform react compiler', () => {
 
   it('should apply React Compiler options', async () => {
     const result = await transform('Counter.tsx', code, {
-      jsx: 'preserve',
-      reactCompiler: {
-        target: '17',
+      jsx: {
+        compiler: {
+          target: '17',
+        },
       },
     });
     expect(result.errors).toHaveLength(0);
@@ -38,8 +40,9 @@ describe('enhanced transform react compiler', () => {
 
   it('should not exclude node_modules by default', async () => {
     const result = await transform(path.join('node_modules', 'pkg', 'Counter.tsx'), code, {
-      jsx: 'preserve',
-      reactCompiler: {},
+      jsx: {
+        compiler: {},
+      },
     });
     expect(result.errors).toHaveLength(0);
     expect(result.code).toContain('from "react/compiler-runtime"');
@@ -48,9 +51,10 @@ describe('enhanced transform react compiler', () => {
 
   it('should skip React Compiler for excluded files', async () => {
     const result = await transform(path.join('node_modules', 'pkg', 'Counter.tsx'), code, {
-      jsx: 'preserve',
-      reactCompiler: {
-        exclude: [/(^|[/\\])node_modules[/\\]/],
+      jsx: {
+        compiler: {
+          exclude: [/(^|[/\\])node_modules[/\\]/],
+        },
       },
     });
     expect(result.errors).toHaveLength(0);
@@ -60,9 +64,10 @@ describe('enhanced transform react compiler', () => {
 
   it('should only run React Compiler for included files', async () => {
     const result = await transform('Counter.tsx', code, {
-      jsx: 'preserve',
-      reactCompiler: {
-        include: ['**/src/**'],
+      jsx: {
+        compiler: {
+          include: ['**/src/**'],
+        },
       },
     });
     expect(result.errors).toHaveLength(0);

@@ -7,38 +7,27 @@ use rolldown_common::{
 };
 
 // MARK: - Rollipop
-use crate::options::BindingTransformOptions;
-use crate::types::binding_string_or_regex::bindingify_string_or_regex_array;
+use crate::options::{BindingJsxOptions, BindingTransformOptions};
 
 pub fn normalize_binding_transform_options(
   options: BindingTransformOptions,
 ) -> BundlerTransformOptions {
   let mut normalized_options = normalize_oxc_transform_options(options.options);
   // MARK: - Rollipop
-  if options.jsx_refresh_include.is_some() || options.jsx_refresh_exclude.is_some() {
-    let include =
-      options.jsx_refresh_include.map(bindingify_string_or_regex_array).unwrap_or_default();
-    let exclude =
-      options.jsx_refresh_exclude.map(bindingify_string_or_regex_array).unwrap_or_default();
-
-    if let Some(Either::Right(jsx)) = &mut normalized_options.jsx
-      && let Some(refresh) = &mut jsx.refresh
-    {
-      match refresh {
-        Either::Left(enabled) if *enabled => {
-          *refresh = Either::Right(ReactRefreshOptions { include, exclude, ..Default::default() });
-        }
-        Either::Right(refresh_options) => {
-          refresh_options.include = include;
-          refresh_options.exclude = exclude;
-        }
-        Either::Left(_) => {}
-      }
-    }
+  if let Some(jsx) = options.jsx {
+    normalized_options.jsx = Some(normalize_binding_jsx_options(jsx));
   }
-  let react_compiler = options.react_compiler.map(Into::into);
-  normalized_options.react_compiler = react_compiler;
   normalized_options
+}
+
+// MARK: - Rollipop
+pub fn normalize_binding_jsx_options(
+  jsx: napi::Either<String, BindingJsxOptions>,
+) -> Either<String, JsxOptions> {
+  match jsx {
+    napi::Either::A(jsx) => Either::Left(jsx),
+    napi::Either::B(jsx) => Either::Right(jsx.into()),
+  }
 }
 
 pub fn normalize_oxc_transform_options(options: TransformOptions) -> BundlerTransformOptions {
@@ -65,6 +54,8 @@ pub fn normalize_oxc_transform_options(options: TransformOptions) -> BundlerTran
         pragma: jsx.pragma,
         pragma_frag: jsx.pragma_frag,
         refresh,
+        // MARK: - Rollipop
+        compiler: None,
       })
     }
   });
@@ -136,14 +127,5 @@ pub fn normalize_oxc_transform_options(options: TransformOptions) -> BundlerTran
     module_name: HelperLoaderOptions::default().module_name,
   });
 
-  BundlerTransformOptions {
-    jsx,
-    target,
-    decorator,
-    typescript,
-    assumptions,
-    plugins,
-    helpers,
-    react_compiler: None,
-  }
+  BundlerTransformOptions { jsx, target, decorator, typescript, assumptions, plugins, helpers }
 }

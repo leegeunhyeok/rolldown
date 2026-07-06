@@ -1,6 +1,7 @@
 import type {
+  BindingReactRefreshOptions,
   BindingStringOrRegex,
-  OxcReactCompilerOptions,
+  BindingTransformOptions,
   TransformOptions as OxcTransformOptions,
 } from '../binding.cjs';
 import type { InputOptions } from '../options/input-options';
@@ -8,16 +9,23 @@ import { normalizedStringOrRegex } from './normalize-string-or-regex';
 
 type RolldownOxcTransformOptions = Omit<
   OxcTransformOptions,
-  'sourceType' | 'lang' | 'cwd' | 'sourcemap' | 'define' | 'inject'
+  'sourceType' | 'lang' | 'cwd' | 'sourcemap' | 'define' | 'inject' | 'jsx'
 >;
 
 type RolldownTransformOptions = {
   options: RolldownOxcTransformOptions;
   // MARK: - Rollipop
-  reactCompiler?: OxcReactCompilerOptions;
-  // MARK: - Rollipop
-  jsxRefreshInclude?: BindingStringOrRegex[];
-  jsxRefreshExclude?: BindingStringOrRegex[];
+  jsx?: BindingTransformOptions['jsx'];
+};
+
+// MARK: - Rollipop
+type RolldownBindingJsxOptions = Omit<
+  Exclude<InputOptions['transform'], undefined> extends { jsx?: infer Jsx }
+    ? Exclude<Jsx, false | string | undefined>
+    : never,
+  'refresh'
+> & {
+  refresh?: boolean | BindingReactRefreshOptions;
 };
 
 export interface NormalizedTransformOptions {
@@ -42,24 +50,15 @@ export function normalizeTransformOptions(inputOptions: InputOptions): Normalize
   // Extract OXC transform options (excluding define, inject, and dropLabels)
   let oxcTransformOptions: RolldownTransformOptions | undefined;
   if (transform) {
-    const {
-      define: _define,
-      inject: _inject,
-      dropLabels: _dropLabels,
-      reactCompiler,
-      ...rest
-    } = transform;
+    const { define: _define, inject: _inject, dropLabels: _dropLabels, jsx, ...rest } = transform;
+    // MARK: - Rollipop
+    const normalizedJsx = normalizeJsxOptions(jsx);
     // Only set oxcTransformOptions if there are actual options
-    if (Object.keys(rest).length > 0 || reactCompiler != null) {
-      if (rest.jsx === false) {
-        rest.jsx = 'disable' as any;
-      }
+    if (Object.keys(rest).length > 0 || normalizedJsx != null) {
       // MARK: - Rollipop
-      const jsxRefreshFilters = normalizeJsxRefreshFilters(rest);
       oxcTransformOptions = {
         options: rest as RolldownOxcTransformOptions,
-        ...(reactCompiler != null ? { reactCompiler } : {}),
-        ...jsxRefreshFilters,
+        ...(normalizedJsx != null ? { jsx: normalizedJsx } : {}),
       };
     }
   }
@@ -73,31 +72,38 @@ export function normalizeTransformOptions(inputOptions: InputOptions): Normalize
 }
 
 // MARK: - Rollipop
-function normalizeJsxRefreshFilters(transformOptions: {
-  jsx?: unknown;
-}): Pick<RolldownTransformOptions, 'jsxRefreshInclude' | 'jsxRefreshExclude'> {
-  const jsx = transformOptions.jsx;
+function normalizeJsxOptions(
+  jsx: Exclude<InputOptions['transform'], undefined>['jsx'],
+): RolldownTransformOptions['jsx'] | undefined {
+  if (jsx === false) {
+    return 'disable';
+  }
   if (jsx == null || typeof jsx !== 'object') {
-    return {};
+    return jsx;
   }
 
-  const refresh = (jsx as { refresh?: unknown }).refresh;
+  const { refresh, ...bindingJsxOptions } = jsx;
+
   if (refresh == null || typeof refresh !== 'object') {
-    return {};
+    const normalizedJsx = {
+      ...bindingJsxOptions,
+      ...(refresh !== undefined ? { refresh } : {}),
+    } satisfies RolldownBindingJsxOptions;
+    return normalizedJsx;
   }
 
-  const { include, exclude, ...oxcRefreshOptions } = refresh as {
+  const { include, exclude, ...refreshOptions } = refresh as {
     include?: BindingStringOrRegex | BindingStringOrRegex[];
     exclude?: BindingStringOrRegex | BindingStringOrRegex[];
   };
 
-  transformOptions.jsx = {
-    ...(jsx as Record<string, unknown>),
-    refresh: oxcRefreshOptions,
-  };
-
-  return {
-    jsxRefreshInclude: normalizedStringOrRegex<BindingStringOrRegex[]>(include),
-    jsxRefreshExclude: normalizedStringOrRegex<BindingStringOrRegex[]>(exclude),
-  };
+  const normalizedJsx = {
+    ...bindingJsxOptions,
+    refresh: {
+      ...refreshOptions,
+      include: normalizedStringOrRegex<BindingStringOrRegex[]>(include),
+      exclude: normalizedStringOrRegex<BindingStringOrRegex[]>(exclude),
+    },
+  } satisfies RolldownBindingJsxOptions;
+  return normalizedJsx;
 }

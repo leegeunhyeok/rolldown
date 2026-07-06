@@ -6,15 +6,15 @@ use napi_derive::napi;
 use oxc_napi::get_source_type;
 use oxc_sourcemap::napi::SourceMap;
 use oxc_transform_napi::{
-  CompilerAssumptions, DecoratorOptions, Helpers, JsxOptions, PluginsOptions, TypeScriptOptions,
+  CompilerAssumptions, DecoratorOptions, Helpers, PluginsOptions, TypeScriptOptions,
 };
 use rolldown_common::{EnhancedTransformOptions, TsconfigOption};
 use rustc_hash::FxHashMap;
 
-use super::OxcReactCompilerOptions;
+use super::BindingJsxOptions;
 use crate::types::binding_outputs::to_binding_error;
 use crate::types::error::BindingError;
-use crate::utils::normalize_oxc_transform_options;
+use crate::utils::{normalize_binding_jsx_options, normalize_oxc_transform_options};
 
 fn napi_sourcemap_to_sourcemap(
   map: SourceMap,
@@ -138,8 +138,8 @@ pub struct BindingEnhancedTransformOptions {
   pub typescript: Option<TypeScriptOptions>,
   /// Configure how TSX and JSX are transformed.
   /// @see {@link https://oxc.rs/docs/guide/usage/transformer/jsx}
-  #[napi(ts_type = "'preserve' | JsxOptions")]
-  pub jsx: Option<Either<String, JsxOptions>>,
+  #[napi(ts_type = "'preserve' | BindingJsxOptions")]
+  pub jsx: Option<Either<String, BindingJsxOptions>>,
   /// Sets the target environment for the generated JavaScript.
   ///
   /// The lowest target is `es2015`.
@@ -176,9 +176,6 @@ pub struct BindingEnhancedTransformOptions {
   pub tsconfig: Option<Either<bool, BindingTsconfigRawOptions>>,
   /// An input source map to collapse with the output source map.
   pub input_map: Option<SourceMap>,
-  // MARK: - Rollipop
-  /// Experimental React Compiler transform.
-  pub react_compiler: Option<OxcReactCompilerOptions>,
 }
 
 impl BindingEnhancedTransformOptions {
@@ -190,7 +187,7 @@ impl BindingEnhancedTransformOptions {
       sourcemap: self.sourcemap.take(),
       assumptions: self.assumptions.take(),
       typescript: self.typescript.take(),
-      jsx: self.jsx.take(),
+      jsx: None,
       target: self.target.take(),
       helpers: self.helpers.take(),
       define: self.define.take(),
@@ -308,9 +305,12 @@ impl BindingEnhancedTransformOptions {
         .collect()
     });
 
+    let jsx = self.jsx.take();
     let mut transform_options = normalize_oxc_transform_options(self.take_oxc_options());
     // MARK: - Rollipop
-    transform_options.react_compiler = self.react_compiler.take().map(Into::into);
+    if let Some(jsx) = jsx {
+      transform_options.jsx = Some(normalize_binding_jsx_options(jsx));
+    }
     Ok(EnhancedTransformOptions::from_transform_options(
       transform_options,
       cwd,

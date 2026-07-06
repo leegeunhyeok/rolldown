@@ -5,6 +5,8 @@ use rolldown_utils::{
   url::clean_url,
 };
 
+use super::react_compiler_options::ReactCompilerOptions;
+
 #[derive(Debug, Default, Clone)]
 pub struct JsxOptions {
   /// Decides which runtime to use.
@@ -68,6 +70,10 @@ pub struct JsxOptions {
   ///
   /// @default false
   pub refresh: Option<Either<bool, ReactRefreshOptions>>,
+
+  // MARK: - Rollipop
+  /// Enable React Compiler.
+  pub compiler: Option<ReactCompilerOptions>,
 }
 
 #[derive(Debug, Default, Clone)]

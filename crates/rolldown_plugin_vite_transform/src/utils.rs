@@ -139,10 +139,12 @@ impl ViteTransformPlugin {
       }
     }
 
-    if let Some(react_compiler) = &transform_options.react_compiler
+    if let Some(react_compiler) = transform_options.react_compiler()
       && !react_compiler.should_transform(id, cwd)
     {
-      transform_options.react_compiler = None;
+      if let Some(Either::Right(jsx)) = &mut transform_options.jsx {
+        jsx.compiler = None;
+      }
     }
     Ok((source_type, transform_options.try_into().map_err(|err: String| anyhow::anyhow!(err))?))
   }

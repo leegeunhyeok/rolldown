@@ -219,7 +219,7 @@ impl TransformOptions {
       }
       TransformOptionsInner::Raw(raw) => {
         self.target.has_feature(ESFeature::ES2024UnicodeSetsRegex)
-          || raw.base_options.react_compiler.is_some()
+          || raw.base_options.react_compiler().is_some()
       }
     }
   }
@@ -277,7 +277,7 @@ pub fn merge_transform_options_with_tsconfig(
   } else {
     transform_options
   };
-  let react_compiler = merged_options.react_compiler.clone();
+  let react_compiler = merged_options.react_compiler().cloned();
   // MARK: - Rollipop
   let react_refresh = extract_react_refresh_options(&merged_options);
 

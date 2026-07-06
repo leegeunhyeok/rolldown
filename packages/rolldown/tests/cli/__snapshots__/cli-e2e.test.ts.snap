@@ -111,7 +111,6 @@ OPTIONS
   --transform.jsx <transform.jsx>.
   --transform.plugins.styledComponents <transform.plugins.styledComponents>.
   --transform.plugins.taggedTemplateEscape .
-  --transform.reactCompiler <transform.reactCompiler>Enable React Compiler.
   --transform.target <transform.target>The JavaScript target environment.
   --transform.typescript.allowDeclareFields .
   --transform.typescript.allowNamespaces .
@@ -261,7 +260,6 @@ OPTIONS
   --transform.jsx <transform.jsx>.
   --transform.plugins.styledComponents <transform.plugins.styledComponents>.
   --transform.plugins.taggedTemplateEscape .
-  --transform.reactCompiler <transform.reactCompiler>Enable React Compiler.
   --transform.target <transform.target>The JavaScript target environment.
   --transform.typescript.allowDeclareFields .
   --transform.typescript.allowNamespaces .
@@ -411,7 +409,6 @@ OPTIONS
   --transform.jsx <transform.jsx>.
   --transform.plugins.styledComponents <transform.plugins.styledComponents>.
   --transform.plugins.taggedTemplateEscape .
-  --transform.reactCompiler <transform.reactCompiler>Enable React Compiler.
   --transform.target <transform.target>The JavaScript target environment.
   --transform.typescript.allowDeclareFields .
   --transform.typescript.allowNamespaces .
@@ -561,7 +558,6 @@ OPTIONS
   --transform.jsx <transform.jsx>.
   --transform.plugins.styledComponents <transform.plugins.styledComponents>.
   --transform.plugins.taggedTemplateEscape .
-  --transform.reactCompiler <transform.reactCompiler>Enable React Compiler.
   --transform.target <transform.target>The JavaScript target environment.
   --transform.typescript.allowDeclareFields .
   --transform.typescript.allowNamespaces .

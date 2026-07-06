@@ -24,6 +24,10 @@ interface JsxOptions extends Omit<OxcJsxOptions, 'refresh'> {
    * Enable React Fast Refresh.
    */
   refresh?: boolean | ReactRefreshOptions;
+  /**
+   * Enable React Compiler.
+   */
+  compiler?: OxcReactCompilerOptions;
 }
 
 export interface TransformOptions extends Omit<
@@ -139,7 +143,4 @@ export interface TransformOptions extends Omit<
    * - If set to `'preserve'`, JSX syntax will be preserved as-is.
    */
   jsx?: false | 'react' | 'react-jsx' | 'preserve' | JsxOptions;
-
-  // MARK: - Rollipop
-  reactCompiler?: OxcReactCompilerOptions;
 }

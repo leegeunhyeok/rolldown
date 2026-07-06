@@ -53,3 +53,26 @@ describe('plugin type compatibility', () => {
     });
   });
 });
+
+describe('transform option types', () => {
+  test('accepts React Compiler under `transform.jsx.compiler`', () => {
+    defineConfig({
+      transform: {
+        jsx: {
+          compiler: {
+            target: '17',
+          },
+        },
+      },
+    });
+  });
+
+  test('does not accept React Compiler directly under `transform`', () => {
+    defineConfig({
+      transform: {
+        // @ts-expect-error -- use `transform.jsx.compiler` instead
+        reactCompiler: {},
+      },
+    });
+  });
+});

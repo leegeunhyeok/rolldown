@@ -5,9 +5,11 @@ import { expect } from 'vitest';
 export default defineTest({
   config: {
     input: 'main.js',
-    external: ['react', 'react/compiler-runtime'],
+    external: ['react', 'react/compiler-runtime', 'react/jsx-runtime'],
     transform: {
-      reactCompiler: {},
+      jsx: {
+        compiler: {},
+      },
     },
   },
   afterTest(output) {

@@ -2110,7 +2110,7 @@ export interface BindingEnhancedTransformOptions {
    * Configure how TSX and JSX are transformed.
    * @see {@link https://oxc.rs/docs/guide/usage/transformer/jsx}
    */
-  jsx?: 'preserve' | JsxOptions
+  jsx?: 'preserve' | BindingJsxOptions
   /**
    * Sets the target environment for the generated JavaScript.
    *
@@ -2153,8 +2153,6 @@ export interface BindingEnhancedTransformOptions {
   tsconfig?: boolean | BindingTsconfigRawOptions
   /** An input source map to collapse with the output source map. */
   inputMap?: SourceMap
-  /** Experimental React Compiler transform. */
-  reactCompiler?: OxcReactCompilerOptions
 }
 
 /** Result of the enhanced transform API. */
@@ -2435,6 +2433,32 @@ export interface BindingJsWatchChangeEvent {
   event: string
 }
 
+/**
+ * Configure how TSX and JSX are transformed.
+ *
+ * Mirrors Oxc's JSX options with Rollipop-only React Compiler and refresh filters.
+ */
+export interface BindingJsxOptions {
+  /** Decides which runtime to use. */
+  runtime?: 'classic' | 'automatic'
+  /** Emit development-specific information, such as `__source` and `__self`. */
+  development?: boolean
+  /** Toggles whether or not to throw an error if an XML namespaced tag name is used. */
+  throwIfNamespace?: boolean
+  /** Mark JSX elements and top-level React method calls as pure for tree shaking. */
+  pure?: boolean
+  /** Replaces the import source when importing functions. */
+  importSource?: string
+  /** Replace the function used when compiling JSX expressions. */
+  pragma?: string
+  /** Replace the component used when compiling JSX fragments. */
+  pragmaFrag?: string
+  /** Enable React Fast Refresh. */
+  refresh?: boolean | BindingReactRefreshOptions
+  /** Enable React Compiler. */
+  compiler?: OxcReactCompilerOptions
+}
+
 export interface BindingLog {
   message: string
   id?: string
@@ -2689,6 +2713,19 @@ export declare enum BindingPropertyWriteSideEffects {
   False = 1
 }
 
+/** React Fast Refresh options. */
+export interface BindingReactRefreshOptions {
+  /** File patterns to transform. Empty means all files that enter the transform pipeline. */
+  include?: Array<BindingStringOrRegex>
+  /** File patterns to skip. */
+  exclude?: Array<BindingStringOrRegex>
+  /** Specify the identifier of the refresh registration variable. */
+  refreshReg?: string
+  /** Specify the identifier of the refresh signature variable. */
+  refreshSig?: string
+  emitFullSignatures?: boolean
+}
+
 export declare enum BindingRebuildStrategy {
   Always = 0,
   Auto = 1,
@@ -2917,9 +2954,7 @@ export interface BindingTransformHookExtraArgs {
 
 export interface BindingTransformOptions {
   options: OxcTransformOptions
-  reactCompiler?: OxcReactCompilerOptions
-  jsxRefreshInclude?: Array<BindingStringOrRegex>
-  jsxRefreshExclude?: Array<BindingStringOrRegex>
+  jsx?: 'preserve' | 'react' | 'react-jsx' | 'disable' | BindingJsxOptions
 }
 
 export interface BindingTreeshake {
