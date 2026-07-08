@@ -166,6 +166,80 @@ $RefreshReg$(_c, 'HomeScreen');
 }
 
 #[test]
+fn adds_refresh_wrapper_to_js_refresh_candidate_without_markers() {
+  let input = ArcStr::from(
+    "\
+function HomeScreen() {
+  return React.createElement(View);
+}
+
+export default HomeScreen;
+",
+  );
+  let id = "/fixture/App.js";
+  let plugin = RollipopReactRefreshWrapperPlugin::new(RollipopReactRefreshWrapperPluginOptions {
+    cwd: "/fixture".to_string(),
+    include: vec![StringOrRegex::String("**/*.js".to_string())],
+    exclude: vec![],
+    jsx_import_source: None,
+  });
+  let sourcemap_chain = UniqueArc::<Vec<SourcemapChainElement>>::new(vec![]);
+  let ctx = Arc::new(TransformPluginContext::new(
+    PluginContext::new_napi_context(),
+    sourcemap_chain.weak_ref(),
+    input.clone(),
+    ArcStr::from(id),
+    ModuleIdx::new(0),
+    PluginIdx::new(0),
+    None,
+  ));
+  let module_type = ModuleType::Js;
+  let args = HookTransformArgs { id, code: &input, module_type: &module_type };
+
+  let output = block_on(plugin.transform(ctx, &args)).unwrap().expect("plugin should transform");
+  let code = output.code.expect("plugin should return code");
+  assert!(code.contains("function $RefreshReg$(type, id)"));
+  assert!(code.contains("import.meta.hot.accept"));
+  assert!(code.contains("import.meta.hot.invalidate"));
+  assert!(matches!(output.map, HookTransformOutputMap::Null));
+}
+
+#[test]
+fn adds_refresh_wrapper_when_clean_url_matches_include() {
+  let input = ArcStr::from(
+    "\
+export const value = 1;
+",
+  );
+  let id = "/fixture/App.js?raw";
+  let plugin = RollipopReactRefreshWrapperPlugin::new(RollipopReactRefreshWrapperPluginOptions {
+    cwd: "/fixture".to_string(),
+    include: vec![StringOrRegex::String("**/*.js".to_string())],
+    exclude: vec![],
+    jsx_import_source: None,
+  });
+  let sourcemap_chain = UniqueArc::<Vec<SourcemapChainElement>>::new(vec![]);
+  let ctx = Arc::new(TransformPluginContext::new(
+    PluginContext::new_napi_context(),
+    sourcemap_chain.weak_ref(),
+    input.clone(),
+    ArcStr::from(id),
+    ModuleIdx::new(0),
+    PluginIdx::new(0),
+    None,
+  ));
+  let module_type = ModuleType::Js;
+  let args = HookTransformArgs { id, code: &input, module_type: &module_type };
+
+  let output = block_on(plugin.transform(ctx, &args)).unwrap().expect("plugin should transform");
+  let code = output.code.expect("plugin should return code");
+  assert!(code.contains("function $RefreshReg$(type, id)"));
+  assert!(code.contains("import.meta.hot.accept"));
+  assert!(code.contains("import.meta.hot.invalidate"));
+  assert!(matches!(output.map, HookTransformOutputMap::Null));
+}
+
+#[test]
 fn adds_refresh_boundary_to_js_react_class_without_refresh_helpers() {
   let input = ArcStr::from(
     "\
@@ -199,18 +273,19 @@ class HomeScreen extends React.Component {
   let output = block_on(plugin.transform(ctx, &args)).unwrap().expect("plugin should transform");
   let code = output.code.expect("plugin should return code");
   assert!(code.contains("import.meta.hot.accept"));
-  assert!(!code.contains("function $RefreshReg$(type, id)"));
+  assert!(code.contains("function $RefreshReg$(type, id)"));
+  assert!(code.contains("import.meta.hot.invalidate"));
   assert!(matches!(output.map, HookTransformOutputMap::Null));
 }
 
 #[test]
-fn skips_modules_without_refresh_content() {
+fn skips_modules_excluded_by_filter() {
   let input = ArcStr::from("export const runtime = true;\n");
-  let id = "\0rolldown/runtime.js";
+  let id = "/fixture/runtime.js";
   let plugin = RollipopReactRefreshWrapperPlugin::new(RollipopReactRefreshWrapperPluginOptions {
     cwd: "/fixture".to_string(),
     include: vec![StringOrRegex::String("**/*.js".to_string())],
-    exclude: vec![],
+    exclude: vec![StringOrRegex::String("**/runtime.js".to_string())],
     jsx_import_source: None,
   });
   let sourcemap_chain = UniqueArc::<Vec<SourcemapChainElement>>::new(vec![]);
