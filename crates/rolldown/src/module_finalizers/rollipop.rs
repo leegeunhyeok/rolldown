@@ -19,10 +19,12 @@ use rolldown_utils::ecmascript::is_validate_identifier_name;
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::{
+  SharedOptions,
   hmr::utils::HmrAstBuilder,
   rollipop::{
     ROLLIPOP_EXPORTS_NAME, ROLLIPOP_GLOBAL_NAME, ROLLIPOP_MODULE_NAME, ROLLIPOP_REQUIRE_NAME,
   },
+  stages::link_stage::LinkStageOutput,
   types::linking_metadata::{LinkingMetadata, LinkingMetadataVec},
 };
 
@@ -36,29 +38,16 @@ pub enum RollipopRuntimeIdMode {
 }
 
 #[derive(Clone, Copy)]
-pub struct RollipopAstFinalizerParams<'me, 'ast> {
-  pub ast_factory: AstFactory<'ast>,
-  pub modules: &'me IndexModules,
+pub struct RollipopAstFinalizerContext<'me> {
+  pub link_output: &'me LinkStageOutput,
+  pub options: &'me SharedOptions,
   pub module: &'me NormalModule,
-  pub metas: &'me LinkingMetadataVec,
-  pub linking_info: &'me LinkingMetadata,
-  pub stmt_infos: &'me StmtInfos,
-  pub symbol_db: &'me SymbolRefDb,
   pub unique_index: usize,
-  pub runtime_id_mode: RollipopRuntimeIdMode,
-  pub is_dev_mode: bool,
-  pub is_runtime_module: bool,
 }
 
 pub struct RollipopAstFinalizer<'me, 'ast> {
   pub ast_factory: AstFactory<'ast>,
-  pub modules: &'me IndexModules,
-  pub module: &'me NormalModule,
-  pub metas: &'me LinkingMetadataVec,
-  pub linking_info: &'me LinkingMetadata,
-  pub stmt_infos: &'me StmtInfos,
-  pub symbol_db: &'me SymbolRefDb,
-  pub unique_index: usize,
+  pub ctx: RollipopAstFinalizerContext<'me>,
   pub runtime_id_mode: RollipopRuntimeIdMode,
 
   import_bindings: FxHashMap<SymbolId, ImportBinding>,
@@ -73,30 +62,17 @@ pub struct RollipopAstFinalizer<'me, 'ast> {
 }
 
 impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
-  pub fn new(params: RollipopAstFinalizerParams<'me, 'ast>) -> Self {
-    let RollipopAstFinalizerParams {
-      ast_factory,
-      modules,
-      module,
-      metas,
-      linking_info,
-      stmt_infos,
-      symbol_db,
-      unique_index,
-      runtime_id_mode,
-      is_dev_mode,
-      is_runtime_module,
-    } = params;
-
+  pub fn new(ast_factory: AstFactory<'ast>, ctx: RollipopAstFinalizerContext<'me>) -> Self {
+    let runtime_id_mode = if ctx.options.profiler_names {
+      RollipopRuntimeIdMode::StableId
+    } else {
+      RollipopRuntimeIdMode::Numeric
+    };
+    let is_dev_mode = ctx.options.is_dev_mode_enabled();
+    let is_runtime_module = ctx.link_output.runtime.id() == ctx.module.idx;
     Self {
       ast_factory,
-      modules,
-      module,
-      metas,
-      linking_info,
-      stmt_infos,
-      symbol_db,
-      unique_index,
+      ctx,
       runtime_id_mode,
       import_bindings: FxHashMap::default(),
       generated_static_import_infos: FxHashMap::default(),
@@ -108,6 +84,26 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
       is_runtime_module,
       renamed_factory_param_bindings: FxHashMap::default(),
     }
+  }
+
+  fn modules(&self) -> &'me IndexModules {
+    &self.ctx.link_output.module_table.modules
+  }
+
+  fn metas(&self) -> &'me LinkingMetadataVec {
+    &self.ctx.link_output.metas
+  }
+
+  fn linking_info(&self) -> &'me LinkingMetadata {
+    &self.ctx.link_output.metas[self.ctx.module.idx]
+  }
+
+  fn stmt_infos(&self) -> &'me StmtInfos {
+    &self.ctx.link_output.stmt_infos[self.ctx.module.idx]
+  }
+
+  fn symbol_db(&self) -> &'me SymbolRefDb {
+    &self.ctx.link_output.symbol_db
   }
 
   fn runtime_id_expr_for(&self, module: &Module) -> Expression<'ast> {
@@ -130,9 +126,11 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
   }
 
   fn binding_name_for_import(&mut self, target_idx: ModuleIdx, rec_id: ImportRecordIdx) -> &str {
+    let modules = self.modules();
+    let unique_index = self.ctx.unique_index;
     self.generated_static_import_infos.entry(target_idx).or_insert_with(|| {
-      let importee = &self.modules[target_idx];
-      format!("import_{}_{}{}", importee.repr_name(), self.unique_index, rec_id.raw())
+      let importee = &modules[target_idx];
+      format!("import_{}_{}{}", importee.repr_name(), unique_index, rec_id.raw())
     })
   }
 
@@ -169,9 +167,10 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
     }
 
     let (require_expr, interop) = match importee {
-      Module::Normal(importee) => {
-        (self.require_call_for_module(&self.modules[importee.idx]), self.module.interop(importee))
-      }
+      Module::Normal(importee) => (
+        self.require_call_for_module(&self.modules()[importee.idx]),
+        self.ctx.module.interop(importee),
+      ),
       Module::External(importee) => {
         (self.require_call_for_external(importee), Some(Interop::Babel))
       }
@@ -185,7 +184,7 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
   }
 
   fn should_require_importee(&self, importee_idx: ModuleIdx) -> bool {
-    self.modules[importee_idx].as_external().is_some() || self.metas[importee_idx].is_included
+    self.modules()[importee_idx].as_external().is_some() || self.metas()[importee_idx].is_included
   }
 
   fn export_name_for_canonical_ref(
@@ -194,8 +193,8 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
     canonical_ref: SymbolRef,
     fallback: &Specifier,
   ) -> Specifier {
-    for (exported, resolved_export) in self.metas[module_idx].canonical_exports(true) {
-      if self.symbol_db.canonical_ref_for(resolved_export.symbol_ref) == canonical_ref {
+    for (exported, resolved_export) in self.metas()[module_idx].canonical_exports(true) {
+      if self.symbol_db().canonical_ref_for(resolved_export.symbol_ref) == canonical_ref {
         return Specifier::Literal(exported.clone());
       }
     }
@@ -211,11 +210,12 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
     span: Span,
   ) -> (ImportBinding, Option<Statement<'ast>>) {
     let binding_name = self.binding_name_for_import(module_idx, rec_id).to_string();
-    let stmt =
-      self.create_import_binding_stmt(&self.modules[module_idx], &binding_name).map(|mut stmt| {
+    let stmt = self.create_import_binding_stmt(&self.modules()[module_idx], &binding_name).map(
+      |mut stmt| {
         *stmt.span_mut() = span;
         stmt
-      });
+      },
+    );
     (self.import_binding_for_imported(&binding_name, imported), stmt)
   }
 
@@ -226,13 +226,13 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
     imported: &Specifier,
     span: Span,
   ) -> Option<(ImportBinding, Option<Statement<'ast>>)> {
-    let rec = &self.module.import_records[rec_id];
+    let rec = &self.ctx.module.import_records[rec_id];
     let importee_idx = rec.resolved_module?;
     let (target_idx, target_imported) = if self.should_require_importee(importee_idx) {
       (importee_idx, imported.clone())
     } else {
-      let local_ref = SymbolRef::from((self.module.idx, local_symbol_id));
-      let canonical_ref = self.symbol_db.canonical_ref_for(local_ref);
+      let local_ref = SymbolRef::from((self.ctx.module.idx, local_symbol_id));
+      let canonical_ref = self.symbol_db().canonical_ref_for(local_ref);
       (
         canonical_ref.owner,
         self.export_name_for_canonical_ref(canonical_ref.owner, canonical_ref, imported),
@@ -248,7 +248,7 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
     imported: &Specifier,
     span: Span,
   ) -> Option<(ImportBinding, Option<Statement<'ast>>)> {
-    let rec = &self.module.import_records[rec_id];
+    let rec = &self.ctx.module.import_records[rec_id];
     let importee_idx = rec.resolved_module?;
     let (target_idx, target_imported) = if self.should_require_importee(importee_idx) {
       (importee_idx, imported.clone())
@@ -256,8 +256,8 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
       let Specifier::Literal(imported_name) = imported else {
         return None;
       };
-      let resolved_export = self.metas[importee_idx].resolved_exports.get(imported_name)?;
-      let canonical_ref = self.symbol_db.canonical_ref_for(resolved_export.symbol_ref);
+      let resolved_export = self.metas()[importee_idx].resolved_exports.get(imported_name)?;
+      let canonical_ref = self.symbol_db().canonical_ref_for(resolved_export.symbol_ref);
       (
         canonical_ref.owner,
         self.export_name_for_canonical_ref(canonical_ref.owner, canonical_ref, imported),
@@ -272,15 +272,16 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
     symbol_ref: SymbolRef,
     span: Span,
   ) -> Expression<'ast> {
-    let canonical_ref = self.symbol_db.canonical_ref_for(symbol_ref);
-    let module = &self.modules[canonical_ref.owner];
-    let fallback = Specifier::Literal(canonical_ref.name(self.symbol_db).into());
+    let canonical_ref = self.symbol_db().canonical_ref_for(symbol_ref);
+    let module = &self.modules()[canonical_ref.owner];
+    let fallback = Specifier::Literal(canonical_ref.name(self.symbol_db()).into());
     let imported =
       self.export_name_for_canonical_ref(canonical_ref.owner, canonical_ref, &fallback);
     let (require_expr, interop) = match module {
-      Module::Normal(importee) => {
-        (self.require_call_for_module(&self.modules[importee.idx]), self.module.interop(importee))
-      }
+      Module::Normal(importee) => (
+        self.require_call_for_module(&self.modules()[importee.idx]),
+        self.ctx.module.interop(importee),
+      ),
       Module::External(importee) => {
         (self.require_call_for_external(importee), Some(Interop::Babel))
       }
@@ -304,7 +305,7 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
       Expression::ComputedMemberExpression(expr) => (expr.node_id(), expr.span),
       _ => return None,
     };
-    let resolution = self.linking_info.resolved_member_expr_refs.get(&node_id)?;
+    let resolution = self.linking_info().resolved_member_expr_refs.get(&node_id)?;
     if let Some(reference_id) = resolution.reference_id
       && let Some(symbol_id) = scoping.get_reference(reference_id).symbol_id()
       && self.import_bindings.contains_key(&symbol_id)
@@ -327,7 +328,7 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
   }
 
   fn should_include_top_level_stmt(&self, stmt_info_idx: StmtInfoIdx) -> bool {
-    self.is_runtime_module || self.linking_info.stmt_info_included.has_bit(stmt_info_idx)
+    self.is_runtime_module || self.linking_info().stmt_info_included.has_bit(stmt_info_idx)
   }
 
   fn collect_factory_param_binding_renames(&mut self, scoping: &Scoping) {
@@ -385,10 +386,10 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
     rec_id: ImportRecordIdx,
     span: Span,
   ) -> Option<(ModuleIdx, String, Option<Statement<'ast>>)> {
-    let rec = &self.module.import_records[rec_id];
+    let rec = &self.ctx.module.import_records[rec_id];
     let importee_idx = rec.resolved_module?;
     let binding_name = self.binding_name_for_import(importee_idx, rec_id).to_string();
-    let importee = &self.modules[importee_idx];
+    let importee = &self.modules()[importee_idx];
     let stmt = self.create_import_binding_stmt(importee, &binding_name).map(|mut stmt| {
       *stmt.span_mut() = span;
       stmt
@@ -408,8 +409,8 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
         let module_decl = module_decl.to_module_declaration_mut();
         match module_decl {
           ast::ModuleDeclaration::ImportDeclaration(import_decl) => {
-            let rec_id = self.module.imports[&import_decl.node_id()];
-            let rec = &self.module.import_records[rec_id];
+            let rec_id = self.ctx.module.imports[&import_decl.node_id()];
+            let rec = &self.ctx.module.import_records[rec_id];
             let Some(importee_idx) = rec.resolved_module else {
               return;
             };
@@ -475,23 +476,23 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
             if needs_importee_binding
               && self.should_require_importee(importee_idx)
               && let Some(stmt) =
-                self.create_import_binding_stmt(&self.modules[importee_idx], &binding_name)
+                self.create_import_binding_stmt(&self.modules()[importee_idx], &binding_name)
             {
               program_body.push(stmt);
             }
           }
           ast::ModuleDeclaration::ExportNamedDeclaration(decl) => {
             if decl.source.is_some() {
-              let rec_id = self.module.imports[&decl.node_id()];
+              let rec_id = self.ctx.module.imports[&decl.node_id()];
               if decl.specifiers.is_empty() {
-                let rec = &self.module.import_records[rec_id];
+                let rec = &self.ctx.module.import_records[rec_id];
                 let Some(importee_idx) = rec.resolved_module else {
                   return;
                 };
                 if self.should_require_importee(importee_idx) {
                   let binding_name = self.binding_name_for_import(importee_idx, rec_id).to_string();
                   if let Some(stmt) =
-                    self.create_import_binding_stmt(&self.modules[importee_idx], &binding_name)
+                    self.create_import_binding_stmt(&self.modules()[importee_idx], &binding_name)
                   {
                     program_body.push(stmt);
                   }
@@ -639,7 +640,7 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
     program_body: &mut oxc::allocator::Vec<'ast, Statement<'ast>>,
     export_all_decl: &ast::ExportAllDeclaration<'ast>,
   ) {
-    let rec_id = self.module.imports[&export_all_decl.node_id()];
+    let rec_id = self.ctx.module.imports[&export_all_decl.node_id()];
     let Some((_importee_idx, binding_name, stmt)) =
       self.ensure_import_for_record(rec_id, export_all_decl.span)
     else {
@@ -664,21 +665,21 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
     let Statement::ImportDeclaration(import_decl) = stmt else {
       return false;
     };
-    let rec_id = self.module.imports[&import_decl.node_id()];
-    let rec = &self.module.import_records[rec_id];
-    rec.resolved_module.is_some_and(|importee_idx| self.metas[importee_idx].is_included)
+    let rec_id = self.ctx.module.imports[&import_decl.node_id()];
+    let rec = &self.ctx.module.import_records[rec_id];
+    rec.resolved_module.is_some_and(|importee_idx| self.metas()[importee_idx].is_included)
   }
 
   fn should_include_re_export_for_runtime_execution(&self, stmt: &Statement<'_>) -> bool {
     let rec_id = match stmt {
       Statement::ExportNamedDeclaration(decl) if decl.source.is_some() => {
-        self.module.imports[&decl.node_id()]
+        self.ctx.module.imports[&decl.node_id()]
       }
-      Statement::ExportAllDeclaration(decl) => self.module.imports[&decl.node_id()],
+      Statement::ExportAllDeclaration(decl) => self.ctx.module.imports[&decl.node_id()],
       _ => return false,
     };
-    let rec = &self.module.import_records[rec_id];
-    rec.resolved_module.is_some_and(|importee_idx| self.metas[importee_idx].is_included)
+    let rec = &self.ctx.module.import_records[rec_id];
+    rec.resolved_module.is_some_and(|importee_idx| self.metas()[importee_idx].is_included)
   }
 
   fn create_re_export_all_stmt(&self, binding_name: &str, span: Span) -> Statement<'ast> {
@@ -761,27 +762,27 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
   }
 
   fn add_json_metadata_exports(&mut self) {
-    if !matches!(self.module.module_type, ModuleType::Json) {
+    if !matches!(self.ctx.module.module_type, ModuleType::Json) {
       return;
     }
 
-    for (exported, resolved_export) in self.linking_info.canonical_exports(true) {
+    for (exported, resolved_export) in self.linking_info().canonical_exports(true) {
       if exported == "default" {
         continue;
       }
-      let canonical_ref = self.symbol_db.canonical_ref_for(resolved_export.symbol_ref);
-      if canonical_ref.owner != self.module.idx {
+      let canonical_ref = self.symbol_db().canonical_ref_for(resolved_export.symbol_ref);
+      if canonical_ref.owner != self.ctx.module.idx {
         continue;
       }
       if !self
-        .stmt_infos
+        .stmt_infos()
         .declared_stmts_by_symbol(&canonical_ref)
         .iter()
         .any(|stmt_info_idx| self.should_include_top_level_stmt(*stmt_info_idx))
       {
         continue;
       }
-      let name = canonical_ref.name(self.symbol_db);
+      let name = canonical_ref.name(self.symbol_db());
       self.exports.push(self.ast_factory.make_lazy_export_property(
         exported,
         self.ast_factory.make_id_ref_expr(SPAN, name),
@@ -791,7 +792,7 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
   }
 
   fn hot_context_name(&self) -> String {
-    format!("hot_{}", self.module.repr_name)
+    format!("hot_{}", self.ctx.module.repr_name)
   }
 
   fn rewrite_hot_accept_call_deps(&self, call_expr: &mut ast::CallExpression<'ast>) {
@@ -801,26 +802,29 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
     match &mut call_expr.arguments[0] {
       ast::Argument::StringLiteral(lit) => {
         let Some(rec_idx) =
-          self.module.hmr_info.module_request_to_import_record_idx.get(lit.value.as_str())
+          self.ctx.module.hmr_info.module_request_to_import_record_idx.get(lit.value.as_str())
         else {
           return;
         };
-        let Some(module_idx) = self.module.import_records[*rec_idx].resolved_module else { return };
-        lit.value = ast::Str::from_str_in(self.modules[module_idx].stable_id(), &self.ast_factory);
+        let Some(module_idx) = self.ctx.module.import_records[*rec_idx].resolved_module else {
+          return;
+        };
+        lit.value =
+          ast::Str::from_str_in(self.modules()[module_idx].stable_id(), &self.ast_factory);
       }
       ast::Argument::ArrayExpression(array) => {
         for element in &mut array.elements {
           if let ast::ArrayExpressionElement::StringLiteral(lit) = element {
             let Some(rec_idx) =
-              self.module.hmr_info.module_request_to_import_record_idx.get(lit.value.as_str())
+              self.ctx.module.hmr_info.module_request_to_import_record_idx.get(lit.value.as_str())
             else {
               continue;
             };
-            let Some(module_idx) = self.module.import_records[*rec_idx].resolved_module else {
+            let Some(module_idx) = self.ctx.module.import_records[*rec_idx].resolved_module else {
               continue;
             };
             lit.value =
-              ast::Str::from_str_in(self.modules[module_idx].stable_id(), &self.ast_factory);
+              ast::Str::from_str_in(self.modules()[module_idx].stable_id(), &self.ast_factory);
           }
         }
       }
@@ -830,10 +834,10 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
 
   fn rewrite_dynamic_import(&self, node: &mut Expression<'ast>) {
     let Expression::ImportExpression(import_expr) = node else { return };
-    let Some(rec_idx) = self.module.imports.get(&import_expr.node_id()) else { return };
-    let rec = &self.module.import_records[*rec_idx];
+    let Some(rec_idx) = self.ctx.module.imports.get(&import_expr.node_id()) else { return };
+    let rec = &self.ctx.module.import_records[*rec_idx];
     let Some(importee_idx) = rec.resolved_module else { return };
-    let importee = &self.modules[importee_idx];
+    let importee = &self.modules()[importee_idx];
     let require_expr = match importee {
       Module::Normal(_) => self.require_call_for_module(importee),
       Module::External(importee) => self.require_call_for_external(importee),
@@ -864,10 +868,10 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
     {
       return;
     }
-    let Some(rec_idx) = self.module.imports.get(&call_expr.node_id()) else { return };
-    let rec = &self.module.import_records[*rec_idx];
+    let Some(rec_idx) = self.ctx.module.imports.get(&call_expr.node_id()) else { return };
+    let rec = &self.ctx.module.import_records[*rec_idx];
     let Some(importee_idx) = rec.resolved_module else { return };
-    let importee = &self.modules[importee_idx];
+    let importee = &self.modules()[importee_idx];
     *node = match importee {
       Module::Normal(_) => self.require_call_for_module(importee),
       Module::External(importee) => self.require_call_for_external(importee),
@@ -888,7 +892,7 @@ impl<'me, 'ast> HmrAstBuilder<'me, 'ast> for RollipopAstFinalizer<'me, 'ast> {
   }
 
   fn module(&self) -> &NormalModule {
-    self.module
+    self.ctx.module
   }
 
   fn binding_name_for_namespace_object_ref_atom(&self) -> ast::Str<'ast> {
@@ -920,7 +924,7 @@ impl<'ast> Traverse<'ast, ()> for RollipopAstFinalizer<'_, 'ast> {
       }
     } else {
       for (stmt, (stmt_info_idx, _stmt_info)) in
-        body.into_iter().zip(self.stmt_infos.iter_enumerated().skip(1))
+        body.into_iter().zip(self.stmt_infos().iter_enumerated().skip(1))
       {
         if self.should_include_top_level_stmt(stmt_info_idx)
           || is_export_specifier_declaration(&stmt)
@@ -940,7 +944,7 @@ impl<'ast> Traverse<'ast, ()> for RollipopAstFinalizer<'_, 'ast> {
   ) {
     let body = node.body.take_in(&self.ast_factory);
     let mut next_body = oxc::allocator::Vec::with_capacity_in(body.len() + 3, &self.ast_factory);
-    if self.module.exports_kind.is_esm() && !self.is_runtime_module {
+    if self.ctx.module.exports_kind.is_esm() && !self.is_runtime_module {
       next_body.push(self.create_mark_esm_stmt());
       if let Some(stmt) = self.create_define_exports_stmt(ctx.scoping()) {
         next_body.push(stmt);
