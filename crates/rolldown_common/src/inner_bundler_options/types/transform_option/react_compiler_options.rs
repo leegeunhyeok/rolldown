@@ -116,7 +116,7 @@ pub struct ReactCompilerDynamicGating {
 
 impl From<ReactCompilerOptions> for oxc_react_compiler::PluginOptions {
   fn from(value: ReactCompilerOptions) -> Self {
-    let mut options = oxc_react_compiler::default_plugin_options();
+    let mut options = oxc_react_compiler::PluginOptions::default();
     if let Some(compilation_mode) = value.compilation_mode {
       options.compilation_mode = compilation_mode;
     }
@@ -137,15 +137,6 @@ impl From<ReactCompilerOptions> for oxc_react_compiler::PluginOptions {
     }
     if let Some(flow_suppressions) = value.flow_suppressions {
       options.flow_suppressions = flow_suppressions;
-    }
-    if let Some(enable_reanimated) = value.enable_reanimated {
-      options.enable_reanimated = enable_reanimated;
-    }
-    if let Some(is_dev) = value.is_dev {
-      options.is_dev = is_dev;
-    }
-    if value.filename.is_some() {
-      options.filename = value.filename;
     }
     if value.eslint_suppression_rules.is_some() {
       options.eslint_suppression_rules = value.eslint_suppression_rules;

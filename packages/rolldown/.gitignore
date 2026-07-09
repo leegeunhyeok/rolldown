@@ -2,6 +2,9 @@
 *.node
 *.wasm
 tests/watch/temp
+tests/dev/temp
+tests/fixtures/output/sourcemap-filenames/hash-final-content/dist-a
+tests/fixtures/output/sourcemap-filenames/hash-final-content/dist-b
 lib
 
 

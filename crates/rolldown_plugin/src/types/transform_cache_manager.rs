@@ -135,7 +135,7 @@ pub struct TransformCacheManager {
 impl TransformCacheManager {
   fn new(id: String, cache_dir: PathBuf) -> Self {
     if !cache_dir.exists() {
-      std::fs::create_dir_all(&cache_dir).ok();
+      let _ = std::fs::create_dir_all(&cache_dir);
     }
     Self { id, entries: DashMap::default(), pending: DashMap::default(), cache_dir }
   }
@@ -196,7 +196,7 @@ impl TransformCacheManager {
   /// Flush all pending entries to disk asynchronously with concurrency limit.
   pub async fn flush(&self) {
     if !self.cache_dir.exists() {
-      tokio::fs::create_dir_all(&self.cache_dir).await.ok();
+      let _ = tokio::fs::create_dir_all(&self.cache_dir).await;
     }
 
     // Drain pending entries
@@ -219,17 +219,17 @@ impl TransformCacheManager {
       let permit = Arc::clone(&semaphore);
       handles.push(tokio::spawn(async move {
         let _permit = permit.acquire().await;
-        tokio::fs::write(&path, &data).await.ok();
+        let _ = tokio::fs::write(&path, &data).await;
       }));
     }
 
     for handle in handles {
-      handle.await.ok();
+      let _ = handle.await;
     }
   }
 
   pub fn clear(&self) {
-    self.clear_inner().ok();
+    let _ = self.clear_inner();
   }
 
   fn clear_inner(&self) -> io::Result<()> {
@@ -339,7 +339,7 @@ mod tests {
     assert!(cache.get(1).is_none());
     assert!(!cache_dir.exists());
 
-    std::fs::remove_dir_all(root).ok();
+    let _ = std::fs::remove_dir_all(root);
   }
 
   #[test]
@@ -354,7 +354,7 @@ mod tests {
 
     assert!(!cache_dir.exists());
 
-    std::fs::remove_dir_all(root).ok();
+    let _ = std::fs::remove_dir_all(root);
   }
 
   #[test]
@@ -369,6 +369,6 @@ mod tests {
 
     assert!(!root.join(ROLLIPOP_PATH).join(ROLLIPOP_CACHE_PATH).exists());
 
-    std::fs::remove_dir_all(root).ok();
+    let _ = std::fs::remove_dir_all(root);
   }
 }

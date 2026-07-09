@@ -487,6 +487,7 @@ isTypeTrue<IsSchemaSubType<typeof MangleOptionsKeepNamesSchema, MangleOptionsKee
 const MangleOptionsSchema = v.strictObject({
   toplevel: v.optional(v.boolean()),
   keepNames: v.optional(v.union([v.boolean(), MangleOptionsKeepNamesSchema])),
+  reserved: v.optional(v.array(v.string())),
   debug: v.optional(v.boolean()),
 }) satisfies v.GenericSchema<MangleOptions>;
 isTypeTrue<IsSchemaSubType<typeof MangleOptionsSchema, MangleOptions>>();
@@ -907,6 +908,10 @@ const OutputOptionsSchema = v.strictObject({
     v.optional(v.string()),
     v.description('Base URL used to prefix sourcemap paths'),
   ),
+  sourcemapFileNames: v.pipe(
+    v.optional(ChunkFileNamesSchema),
+    v.description('Name pattern for emitted sourcemaps'),
+  ),
   sourcemapDebugIds: v.pipe(v.optional(v.boolean()), v.description('Inject sourcemap debug IDs')),
   sourcemapExcludeSources: v.pipe(
     v.optional(v.boolean()),
@@ -1073,7 +1078,9 @@ const OutputCliOverrideSchema = v.strictObject({
         }),
       ]),
     ),
-    v.description('Code splitting options (true, false, or object)'),
+    v.description(
+      'Code splitting options. Enabled by default; use `--no-codeSplitting` to disable, or `--codeSplitting.minSize` / `--codeSplitting.minShareCount` to configure',
+    ),
   ),
   advancedChunks: v.pipe(
     v.optional(
@@ -1114,6 +1121,10 @@ const CliOptionsSchema = v.strictObject({
   watch: v.pipe(
     v.optional(v.boolean()),
     v.description('Watch files in bundle and rebuild on changes'),
+  ),
+  configLoader: v.pipe(
+    v.optional(v.union([v.literal('bundle'), v.literal('native')])),
+    v.description('How to load the config file (bundle, native)'),
   ),
   ...InputCliOptionsSchema.entries,
   ...OutputCliOptionsSchema.entries,

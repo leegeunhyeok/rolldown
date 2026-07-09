@@ -1,5 +1,6 @@
 use std::{borrow::Cow, fmt::Write};
 
+use rolldown_common::RUNTIME_MODULE_KEY;
 use rolldown_plugin::{
   HookTransformOutput, HookTransformOutputMap, HookUsage, Plugin, SharedTransformPluginContext,
 };
@@ -65,6 +66,11 @@ function $RefreshSig$() {{ return {ROLLIPOP_RUNTIME}.reactRefresh.createSignatur
   }
 
   fn should_wrap(&self, id: &str) -> bool {
+    let cleaned_id = clean_url(id);
+    if id == RUNTIME_MODULE_KEY || cleaned_id == RUNTIME_MODULE_KEY {
+      return false;
+    }
+
     let exclude = (!self.exclude.is_empty()).then_some(self.exclude.as_slice());
     let include = (!self.include.is_empty()).then_some(self.include.as_slice());
 
@@ -72,7 +78,6 @@ function $RefreshSig$() {{ return {ROLLIPOP_RUNTIME}.reactRefresh.createSignatur
       return true;
     }
 
-    let cleaned_id = clean_url(id);
     if cleaned_id != id {
       return filter(exclude, include, cleaned_id, &self.cwd).inner();
     }

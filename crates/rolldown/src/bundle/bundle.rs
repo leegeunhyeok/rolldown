@@ -92,6 +92,19 @@ impl<Fs: FileSystem + Clone + 'static> Bundle<Fs> {
     &mut self,
     scan_mode: ScanMode<ArcStr>,
   ) -> BuildResult<NormalizedScanStageOutput> {
+    // The whole scan (buildStart through buildEnd) is the build phase. Resetting on every exit
+    // means a failed scan cannot leave the emitter stuck in the build phase, where a later emit
+    // (e.g. an HMR patch after a failed rebuild) could still change an already-emitted filename.
+    self.plugin_driver.file_emitter.enter_build_phase();
+    let result = self.scan_modules_impl(scan_mode).await;
+    self.plugin_driver.file_emitter.enter_output_phase();
+    result
+  }
+
+  async fn scan_modules_impl(
+    &mut self,
+    scan_mode: ScanMode<ArcStr>,
+  ) -> BuildResult<NormalizedScanStageOutput> {
     trace_action!(action::BuildStart { action: "BuildStart" });
     let is_full_scan_mode = scan_mode.is_full();
 
@@ -253,7 +266,7 @@ impl<Fs: FileSystem + Clone + 'static> Bundle<Fs> {
       return Ok(output);
     }
 
-    self.cache.merge(output)?;
+    self.cache.merge(output, &self.plugin_driver)?;
     self.cache.update_defer_sync_data(&self.options).await?;
     Ok(self.cache.create_output())
   }
@@ -264,13 +277,13 @@ impl<Fs: FileSystem + Clone + 'static> Bundle<Fs> {
     is_write: bool,
   ) -> BuildResult<BundleOutput> {
     let start = self.plugin_driver.start_timing();
-    let (mut link_stage_output, ast_table) =
+    let (mut link_stage_output, ast_table, used_symbol_refs) =
       LinkStage::new(scan_stage_output, &self.options).link();
     self.plugin_driver.set_link_stage_time(start);
 
     let bundle_output =
       GenerateStage::new(&mut link_stage_output, ast_table, &self.options, &self.plugin_driver)
-        .generate()
+        .generate(used_symbol_refs)
         .await; // Notice we don't use `?` to break the control flow here.
 
     // `create_output`/`make_copy` strip symbol-table scoping from the cache for

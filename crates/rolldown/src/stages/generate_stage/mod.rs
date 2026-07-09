@@ -6,6 +6,7 @@ use oxc_index::IndexVec;
 use render_chunk_to_assets::set_emitted_chunk_preliminary_filenames;
 use rolldown_common::{
   ChunkIdx, ChunkKind, InstantiationKind, OutputExports, PackageJson, PathsOutputOption,
+  PreliminarySourcemapFilename, UsedSymbolRefs, UsedSymbolRefsBuilder,
 };
 use rolldown_devtools::{action, trace_action, trace_action_enabled};
 use rolldown_error::{BuildDiagnostic, BuildResult};
@@ -138,9 +139,16 @@ impl<'a> GenerateStage<'a> {
   }
 
   #[tracing::instrument(level = "debug", skip_all)]
-  pub async fn generate(&mut self) -> BuildResult<BundleOutput> {
+  pub async fn generate(
+    &mut self,
+    mut used_symbol_refs: UsedSymbolRefsBuilder,
+  ) -> BuildResult<BundleOutput> {
     self.plugin_driver.render_start(self.options).await?;
-    let mut chunk_graph = self.generate_chunks().await?;
+    let mut chunk_graph = self.generate_chunks(&mut used_symbol_refs).await?;
+
+    // The chunk optimizer's re-run of the inclusion pass (inside `generate_chunks`) was the
+    // last writer; sealing consumes the builder, so nothing downstream can mutate the set.
+    let used_symbol_refs = used_symbol_refs.seal();
 
     // Count only live chunks. Chunks merged away during chunk optimization (e.g.
     // the standalone runtime chunk folded back into its host) stay in
@@ -156,7 +164,9 @@ impl<'a> GenerateStage<'a> {
 
     self.finalized_module_namespace_ref_usage();
 
-    self.compute_cross_chunk_links(&mut chunk_graph);
+    self.compute_retained_export_symbols(&used_symbol_refs);
+
+    self.compute_cross_chunk_links(&mut chunk_graph, &used_symbol_refs);
 
     self.ensure_lazy_module_initialization_order(&mut chunk_graph);
 
@@ -168,7 +178,7 @@ impl<'a> GenerateStage<'a> {
     self.trace_action_chunks_infos(&chunk_graph);
 
     let mut warnings = vec![];
-    self.compute_chunk_output_exports(&mut chunk_graph, &mut warnings)?;
+    self.compute_chunk_output_exports(&mut chunk_graph, &mut warnings, &used_symbol_refs)?;
     if !warnings.is_empty() {
       self.link_output.warnings.extend(warnings);
     }
@@ -208,7 +218,7 @@ impl<'a> GenerateStage<'a> {
       self.finalize_modules(&mut chunk_graph, &mut ast_table);
     }
     self.detect_ineffective_dynamic_imports(&chunk_graph);
-    self.render_chunk_to_assets(&chunk_graph, ast_table).await
+    self.render_chunk_to_assets(&chunk_graph, ast_table, &used_symbol_refs).await
   }
 
   /// Notices:
@@ -351,7 +361,9 @@ impl<'a> GenerateStage<'a> {
 
     for chunk_id in &chunk_graph.sorted_chunk_idx_vec {
       let chunk = &mut chunk_graph.chunk_table[*chunk_id];
-      if chunk.preliminary_filename.is_some() {
+      if chunk.preliminary_filename.is_some()
+        && chunk.preliminary_sourcemap_filename != PreliminarySourcemapFilename::Uninstantiated
+      {
         // Already generated
         continue;
       }
@@ -362,30 +374,41 @@ impl<'a> GenerateStage<'a> {
         .insert(*chunk_id, pre_generated_chunk_name.representative_chunk_name.clone());
       let pre_rendered_chunk =
         generate_pre_rendered_chunk(chunk, &pre_generated_chunk_name.chunk_name, self.link_output);
+      if chunk.preliminary_filename.is_none() {
+        let preliminary_filename = chunk
+          .generate_preliminary_filename(
+            self.options,
+            &pre_rendered_chunk,
+            &pre_generated_chunk_name.chunk_filename,
+            &mut hash_placeholder_generator,
+            &used_name_counts,
+          )
+          .await?;
+        // Defer chunk name assignment to make sure at this point only entry chunk have a name
+        // if user provided one.
+        chunk.name = Some(pre_generated_chunk_name.chunk_name.clone());
 
-      let preliminary_filename = chunk
-        .generate_preliminary_filename(
-          self.options,
-          &pre_rendered_chunk,
-          &pre_generated_chunk_name.chunk_filename,
-          &mut hash_placeholder_generator,
-          &used_name_counts,
-        )
-        .await?;
-
-      // Defer chunk name assignment to make sure at this point only entry chunk have a name
-      // if user provided one.
-      chunk.name = Some(pre_generated_chunk_name.chunk_name.clone());
-
+        chunk.absolute_preliminary_filename = Some(
+          preliminary_filename
+            .absolutize_with(self.options.cwd.join(&self.options.out_dir))
+            .into_owned()
+            .expect_into_string(),
+        );
+        chunk.preliminary_filename = Some(preliminary_filename);
+      }
+      if chunk.preliminary_sourcemap_filename == PreliminarySourcemapFilename::Uninstantiated {
+        let preliminary_sourcemap_filename = chunk
+          .generate_preliminary_sourcemap_filename(
+            self.options,
+            &pre_rendered_chunk,
+            &pre_generated_chunk_name.chunk_filename,
+            &mut hash_placeholder_generator,
+            &used_name_counts,
+          )
+          .await?;
+        chunk.preliminary_sourcemap_filename = preliminary_sourcemap_filename;
+      }
       chunk.pre_rendered_chunk = Some(pre_rendered_chunk);
-
-      chunk.absolute_preliminary_filename = Some(
-        preliminary_filename
-          .absolutize_with(self.options.cwd.join(&self.options.out_dir))
-          .into_owned()
-          .expect_into_string(),
-      );
-      chunk.preliminary_filename = Some(preliminary_filename);
     }
     Ok(index_chunk_id_to_representative_name)
   }
@@ -394,6 +417,7 @@ impl<'a> GenerateStage<'a> {
     &self,
     chunk_graph: &mut ChunkGraph,
     warnings: &mut Vec<BuildDiagnostic>,
+    used_symbol_refs: &UsedSymbolRefs,
   ) -> BuildResult<()> {
     // Collect all the chunk data we need first
     let mut chunk_export_data = Vec::new();
@@ -412,6 +436,7 @@ impl<'a> GenerateStage<'a> {
           chunk: &chunk_graph.chunk_table[chunk_idx],
           options: self.options,
           link_output: self.link_output,
+          used_symbol_refs,
           chunk_graph,
           plugin_driver: self.plugin_driver,
           module_id_to_codegen_ret: Vec::new(),

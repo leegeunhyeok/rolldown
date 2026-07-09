@@ -113,7 +113,7 @@ pub mod bundler_options {
 // We don't want internal position adjustment of files affect users, so all items are exported in the root.
 pub use crate::{
   chunk::{
-    Chunk, ChunkMeta, PostChunkOptimizationOperation,
+    Chunk, ChunkMeta, PostChunkOptimizationOperation, PreliminarySourcemapFilename,
     chunk_table::ChunkTable,
     types::{
       AddonRenderContext,
@@ -129,8 +129,8 @@ pub use crate::{
     dynamic_import_usage,
     ecma_asset_meta::EcmaAssetMeta,
     ecma_view::{
-      EcmaModuleAstUsage, EcmaView, EcmaViewMeta, PrependRenderedImport, ThisExprReplaceKind,
-      generate_replace_this_expr_map,
+      EcmaModuleAstUsage, EcmaView, EcmaViewMeta, ExportOrigin, PrependRenderedImport,
+      ThisExprReplaceKind, generate_replace_this_expr_map,
     },
     json_to_program::{json_value_to_ecma_ast, json_value_to_expression},
     module_idx::ModuleIdx,
@@ -210,15 +210,16 @@ pub use crate::{
   types::rendered_module::RenderedModule,
   types::resolved_export::ResolvedExport,
   types::resolved_id::{ResolvedExternal, ResolvedId},
+  types::retained_export_symbols::RetainedExportSymbols,
   types::rollup_pre_rendered_asset::RollupPreRenderedAsset,
   types::rollup_pre_rendered_chunk::RollupPreRenderedChunk,
   types::rollup_rendered_chunk::RollupRenderedChunk,
   types::scan_mode::ScanMode,
-  types::side_effect_detail::SideEffectDetail,
   types::side_effects,
   types::source_mutation::SourceMutation,
   types::sourcemap_chain_element::SourcemapChainElement,
   types::stable_module_id::StableModuleId,
+  types::stmt_eval_flags::StmtEvalFlags,
   types::stmt_info::{
     DebugStmtInfoForTreeShaking, DeclaredSymbols, StmtInfo, StmtInfoIdx, StmtInfoMeta, StmtInfos,
   },
@@ -228,7 +229,8 @@ pub use crate::{
   types::symbol_ref_db::{
     GetLocalDb, GetLocalDbMut, SymbolRefDb, SymbolRefDbForModule, SymbolRefFlags,
   },
-  types::used_symbol_refs::UsedSymbolRefs,
+  types::used_external_symbols::UsedExternalSymbols,
+  types::used_symbol_refs::{UsedSymbolRefs, UsedSymbolRefsBuilder},
   types::watch::WatcherChangeKind,
   types::wrap_kind::WrapKind,
 };

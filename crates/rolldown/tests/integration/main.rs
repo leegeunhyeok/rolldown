@@ -1,4 +1,5 @@
 #![allow(clippy::ignore_without_reason)]
+#![allow(clippy::large_futures)]
 
 mod esbuild;
 mod rolldown_fixture;

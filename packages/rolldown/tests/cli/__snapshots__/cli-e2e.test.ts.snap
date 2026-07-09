@@ -49,8 +49,9 @@ OPTIONS
   --checks.unsupportedTsconfigOption Whether to emit warnings when a tsconfig option or combination of options is not supported.
   --chunkFileNames <name>     Name pattern for emitted secondary chunks.
   --cleanDir                  Clean output directory before emitting output.
-  --codeSplitting <codeSplitting>Code splitting options (true, false, or object).
+  --codeSplitting <codeSplitting>Code splitting options. Enabled by default; use \`--no-codeSplitting\` to disable, or \`--codeSplitting.minSize\` / \`--codeSplitting.minShareCount\` to configure.
   --comments <comments>       Control comments in the output.
+  --configLoader <loader>     How to load the config file (bundle, native).
   --context <context>         The entity top-level \`this\` represents.
   --cwd <cwd>                 Current working directory.
   --devtools.sessionId <devtools.sessionId>Used to name the build.
@@ -93,6 +94,7 @@ OPTIONS
   --sourcemapBaseUrl <sourcemapBaseUrl>Base URL used to prefix sourcemap paths.
   --sourcemapDebugIds         Inject sourcemap debug IDs.
   --sourcemapExcludeSources   Exclude source content from sourcemaps.
+  --sourcemapFileNames <sourcemapFileNames>Name pattern for emitted sourcemaps.
   --strict <strict>           Whether to always output \`"use strict"\` directive in non-ES module outputs.
   --strictExecutionOrder      Lets modules be executed in the order they are declared.
   --topLevelVar               Rewrite top-level declarations to use \`var\`.
@@ -198,8 +200,9 @@ OPTIONS
   --checks.unsupportedTsconfigOption Whether to emit warnings when a tsconfig option or combination of options is not supported.
   --chunkFileNames <name>     Name pattern for emitted secondary chunks.
   --cleanDir                  Clean output directory before emitting output.
-  --codeSplitting <codeSplitting>Code splitting options (true, false, or object).
+  --codeSplitting <codeSplitting>Code splitting options. Enabled by default; use \`--no-codeSplitting\` to disable, or \`--codeSplitting.minSize\` / \`--codeSplitting.minShareCount\` to configure.
   --comments <comments>       Control comments in the output.
+  --configLoader <loader>     How to load the config file (bundle, native).
   --context <context>         The entity top-level \`this\` represents.
   --cwd <cwd>                 Current working directory.
   --devtools.sessionId <devtools.sessionId>Used to name the build.
@@ -242,6 +245,7 @@ OPTIONS
   --sourcemapBaseUrl <sourcemapBaseUrl>Base URL used to prefix sourcemap paths.
   --sourcemapDebugIds         Inject sourcemap debug IDs.
   --sourcemapExcludeSources   Exclude source content from sourcemaps.
+  --sourcemapFileNames <sourcemapFileNames>Name pattern for emitted sourcemaps.
   --strict <strict>           Whether to always output \`"use strict"\` directive in non-ES module outputs.
   --strictExecutionOrder      Lets modules be executed in the order they are declared.
   --topLevelVar               Rewrite top-level declarations to use \`var\`.
@@ -347,8 +351,9 @@ OPTIONS
   --checks.unsupportedTsconfigOption Whether to emit warnings when a tsconfig option or combination of options is not supported.
   --chunkFileNames <name>     Name pattern for emitted secondary chunks.
   --cleanDir                  Clean output directory before emitting output.
-  --codeSplitting <codeSplitting>Code splitting options (true, false, or object).
+  --codeSplitting <codeSplitting>Code splitting options. Enabled by default; use \`--no-codeSplitting\` to disable, or \`--codeSplitting.minSize\` / \`--codeSplitting.minShareCount\` to configure.
   --comments <comments>       Control comments in the output.
+  --configLoader <loader>     How to load the config file (bundle, native).
   --context <context>         The entity top-level \`this\` represents.
   --cwd <cwd>                 Current working directory.
   --devtools.sessionId <devtools.sessionId>Used to name the build.
@@ -391,6 +396,7 @@ OPTIONS
   --sourcemapBaseUrl <sourcemapBaseUrl>Base URL used to prefix sourcemap paths.
   --sourcemapDebugIds         Inject sourcemap debug IDs.
   --sourcemapExcludeSources   Exclude source content from sourcemaps.
+  --sourcemapFileNames <sourcemapFileNames>Name pattern for emitted sourcemaps.
   --strict <strict>           Whether to always output \`"use strict"\` directive in non-ES module outputs.
   --strictExecutionOrder      Lets modules be executed in the order they are declared.
   --topLevelVar               Rewrite top-level declarations to use \`var\`.
@@ -496,8 +502,9 @@ OPTIONS
   --checks.unsupportedTsconfigOption Whether to emit warnings when a tsconfig option or combination of options is not supported.
   --chunkFileNames <name>     Name pattern for emitted secondary chunks.
   --cleanDir                  Clean output directory before emitting output.
-  --codeSplitting <codeSplitting>Code splitting options (true, false, or object).
+  --codeSplitting <codeSplitting>Code splitting options. Enabled by default; use \`--no-codeSplitting\` to disable, or \`--codeSplitting.minSize\` / \`--codeSplitting.minShareCount\` to configure.
   --comments <comments>       Control comments in the output.
+  --configLoader <loader>     How to load the config file (bundle, native).
   --context <context>         The entity top-level \`this\` represents.
   --cwd <cwd>                 Current working directory.
   --devtools.sessionId <devtools.sessionId>Used to name the build.
@@ -540,6 +547,7 @@ OPTIONS
   --sourcemapBaseUrl <sourcemapBaseUrl>Base URL used to prefix sourcemap paths.
   --sourcemapDebugIds         Inject sourcemap debug IDs.
   --sourcemapExcludeSources   Exclude source content from sourcemaps.
+  --sourcemapFileNames <sourcemapFileNames>Name pattern for emitted sourcemaps.
   --strict <strict>           Whether to always output \`"use strict"\` directive in non-ES module outputs.
   --strictExecutionOrder      Lets modules be executed in the order they are declared.
   --topLevelVar               Rewrite top-level declarations to use \`var\`.
@@ -781,6 +789,18 @@ exports[`config > should allow multiply output 1`] = `
 
 exports[`config > should bundle in ext-js-syntax-cjs 1`] = `
 "<DIR>/index.js  chunk │ size: 0.13 kB
+
+"
+`;
+
+exports[`config > should load config with --configLoader native (mjs) 1`] = `
+"<DIR>/index.js  chunk │ size: 0.11 kB
+
+"
+`;
+
+exports[`config > should load ts config with --configLoader native 1`] = `
+"<DIR>/index.js  chunk │ size: 0.11 kB
 
 "
 `;

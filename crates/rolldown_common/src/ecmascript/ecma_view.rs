@@ -11,8 +11,8 @@ use rolldown_utils::indexmap::{FxIndexMap, FxIndexSet};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::{
-  ExportsKind, HmrInfo, ImportRecordIdx, LocalExport, ModuleDefFormat, ModuleId, ModuleIdx,
-  NamedImport, ResolvedImportRecord, SourceMutation, SymbolRef,
+  ExportsKind, HmrInfo, ImportRecordIdx, ImporterRecord, LocalExport, ModuleDefFormat, ModuleId,
+  ModuleIdx, NamedImport, ResolvedImportRecord, SourceMutation, SymbolRef,
   side_effects::DeterminedSideEffects, types::source_mutation::ArcSourceMutation,
 };
 
@@ -59,6 +59,37 @@ impl EcmaViewMeta {
   #[inline]
   pub fn has_star_export(&self) -> bool {
     self.contains(Self::HasStarExport)
+  }
+}
+
+/// Where a named export's value comes from: the module's own declaration, or a re-export of an
+/// import.
+///
+/// This classification is the contract between the lazy-barrel loader and tree shaking's
+/// body-demand gating, and the two sides MUST agree: the loader loads every plain import record
+/// of a barrel as soon as one of its *own* exports is requested (`BarrelInfo::local` in
+/// `take_needed_records`), and tree shaking includes the module's gated side-effect statements as
+/// soon as one of its *own* exports is used (`compute_body_demand_keys`). If they classified an
+/// export differently, a retained statement could reference an import record that was never
+/// loaded — a free identifier at runtime (the #9806 bug family). Keeping the classification in
+/// one place makes that agreement hold by construction.
+pub enum ExportOrigin<'a> {
+  /// Declared by the module itself: `export const a = ...`, `export function f() {}`, or a plain
+  /// `export { local }` of a local binding.
+  Own,
+  /// Re-exports an import: `export { a } from './x'`, `export * as ns from './x'`, or
+  /// `import { a } from './x'; export { a }`.
+  ReExport(&'a NamedImport),
+}
+
+impl EcmaView {
+  /// Classify a named export as the module's own declaration or a re-export of an import.
+  /// See [`ExportOrigin`] for why this must stay the single source of truth.
+  pub fn classify_export(&self, local_export: &LocalExport) -> ExportOrigin<'_> {
+    match self.named_imports.get(&local_export.referenced) {
+      Some(named_import) => ExportOrigin::ReExport(named_import),
+      None => ExportOrigin::Own,
+    }
   }
 }
 
@@ -113,6 +144,23 @@ pub struct EcmaView {
   pub json_module_none_self_reference_included_symbol: Option<Box<FxHashSet<SymbolRef>>>,
   /// Import record indices for `module.exports = require(...)` patterns.
   pub cjs_reexport_import_record_ids: Vec<ImportRecordIdx>,
+}
+
+impl EcmaView {
+  /// Re-derives the importer sets from this module's `ImporterRecord`s.
+  pub fn rebuild_importer_sets(&mut self, records: &[ImporterRecord]) {
+    self.importers.clear();
+    self.importers_idx.clear();
+    self.dynamic_importers.clear();
+    for record in records {
+      if record.kind.is_static() {
+        self.importers.insert(record.importer_path.clone());
+        self.importers_idx.insert(record.importer_idx);
+      } else {
+        self.dynamic_importers.insert(record.importer_path.clone());
+      }
+    }
+  }
 }
 
 bitflags! {

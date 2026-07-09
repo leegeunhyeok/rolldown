@@ -306,6 +306,7 @@ pub fn prepare_build_context(
   );
   let cwd =
     raw_options.cwd.unwrap_or_else(|| std::env::current_dir().expect("Failed to get current dir"));
+  let normalized_cwd = cwd.normalize().into_owned();
 
   let tsconfig = raw_options.tsconfig.map(|tsconfig| tsconfig.with_base(&cwd)).unwrap_or_default();
   let yarn_pnp = raw_resolve.yarn_pnp.unwrap_or(false);
@@ -445,6 +446,7 @@ pub fn prepare_build_context(
     sourcemap_path_transform: raw_options.sourcemap_path_transform,
     sourcemap_debug_ids: raw_options.sourcemap_debug_ids.unwrap_or(false),
     sourcemap_exclude_sources: raw_options.sourcemap_exclude_sources.unwrap_or(false),
+    sourcemap_filenames: raw_options.sourcemap_filenames,
     shim_missing_exports: raw_options.shim_missing_exports.unwrap_or(false),
     module_types,
     experimental,
@@ -493,6 +495,7 @@ pub fn prepare_build_context(
       cwd.join(p).normalize().to_string_lossy().to_string()
     }),
     cwd,
+    normalized_cwd,
     preserve_entry_signatures,
     devtools: raw_options.devtools.is_some(),
     optimization: normalize_optimization_option(raw_options.optimization, platform),

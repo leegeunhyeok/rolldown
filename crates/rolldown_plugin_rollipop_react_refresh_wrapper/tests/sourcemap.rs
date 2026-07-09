@@ -6,7 +6,7 @@ use std::{
 };
 
 use arcstr::ArcStr;
-use rolldown_common::{ModuleIdx, ModuleType, SourcemapChainElement};
+use rolldown_common::{ModuleIdx, ModuleType, RUNTIME_MODULE_KEY, SourcemapChainElement};
 use rolldown_plugin::{
   HookTransformArgs, HookTransformOutputMap, Plugin, PluginContext, PluginIdx,
   TransformPluginContext,
@@ -303,4 +303,32 @@ fn skips_modules_excluded_by_filter() {
 
   let output = block_on(plugin.transform(ctx, &args)).unwrap();
   assert!(output.is_none());
+}
+
+#[test]
+fn skips_internal_runtime_module_even_when_included() {
+  for id in [RUNTIME_MODULE_KEY.to_string(), format!("{RUNTIME_MODULE_KEY}?dev")] {
+    let input = ArcStr::from("export const runtime = true;\n");
+    let plugin = RollipopReactRefreshWrapperPlugin::new(RollipopReactRefreshWrapperPluginOptions {
+      cwd: "/fixture".to_string(),
+      include: vec![StringOrRegex::String("**/*.js".to_string())],
+      exclude: vec![],
+      jsx_import_source: None,
+    });
+    let sourcemap_chain = UniqueArc::<Vec<SourcemapChainElement>>::new(vec![]);
+    let ctx = Arc::new(TransformPluginContext::new(
+      PluginContext::new_napi_context(),
+      sourcemap_chain.weak_ref(),
+      input.clone(),
+      ArcStr::from(id.as_str()),
+      ModuleIdx::new(0),
+      PluginIdx::new(0),
+      None,
+    ));
+    let module_type = ModuleType::Js;
+    let args = HookTransformArgs { id: id.as_str(), code: &input, module_type: &module_type };
+
+    let output = block_on(plugin.transform(ctx, &args)).unwrap();
+    assert!(output.is_none());
+  }
 }

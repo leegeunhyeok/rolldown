@@ -43,6 +43,7 @@ pub struct NormalizedBundlerOptions {
   // --- Input
   pub input: Vec<InputItem>,
   pub cwd: PathBuf,
+  pub normalized_cwd: PathBuf,
   pub external: IsExternal,
   /// corresponding to `false | NormalizedTreeshakeOption`
   pub treeshake: NormalizedTreeshakeOptions,
@@ -80,6 +81,7 @@ pub struct NormalizedBundlerOptions {
   pub sourcemap_debug_ids: bool,
   pub sourcemap_exclude_sources: bool,
   pub sourcemap_base_url: Option<String>,
+  pub sourcemap_filenames: Option<ChunkFilenamesOutputOption>,
   pub experimental: ExperimentalOptions,
   pub minify: MinifyOptions,
   pub extend: bool,
@@ -128,6 +130,7 @@ impl Default for NormalizedBundlerOptions {
     Self {
       input: Default::default(),
       cwd: Default::default(),
+      normalized_cwd: Default::default(),
       external: Default::default(),
       treeshake: Default::default(),
       platform: Platform::Neutral,
@@ -160,6 +163,7 @@ impl Default for NormalizedBundlerOptions {
       sourcemap_debug_ids: Default::default(),
       sourcemap_exclude_sources: false,
       sourcemap_base_url: Default::default(),
+      sourcemap_filenames: None,
       experimental: Default::default(),
       minify: MinifyOptions::Disabled,
       extend: Default::default(),
