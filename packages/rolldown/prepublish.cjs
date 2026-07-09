@@ -1,6 +1,6 @@
 const { spawnSync } = require('node:child_process');
 
-const args = ['pre-publish', '-t', 'npm', '--no-gh-release'];
+const args = ['pre-publish', '-t', 'npm', '--no-gh-release', ...process.argv.slice(2)];
 const isDryRun =
   process.env.ROLLDOWN_NAPI_PREPUBLISH_DRY_RUN === 'true' ||
   process.env.npm_config_dry_run === 'true' ||
