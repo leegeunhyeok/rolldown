@@ -1,4 +1,21 @@
 
+## [1.0.22] - 2026-07-09
+
+### 🐛 Bug Fixes
+
+- wrap rollipop refresh candidates by `@leegeunhyeok`
+
+### 🚜 Refactor
+
+- simplify rollipop finalizer context by `@leegeunhyeok`
+- move react compiler option under jsx transform by `@leegeunhyeok`
+
+### ⚙️ Miscellaneous Tasks
+
+- add pkg.pr.new preview workflow by `@leegeunhyeok`
+- sync upstream rolldown v1.1.5 by `@leegeunhyeok`
+
+
 ## [1.1.5] - 2026-07-08
 
 ### 🚀 Features
