@@ -2918,6 +2918,7 @@ export interface BindingRollipopReactRefreshWrapperPluginConfig {
   include?: Array<BindingStringOrRegex>
   exclude?: Array<BindingStringOrRegex>
   jsxImportSource?: string
+  id?: string
 }
 
 export interface BindingSourcemap {

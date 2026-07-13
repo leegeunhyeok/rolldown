@@ -63,6 +63,7 @@ export default HomeScreen;
     include: vec![StringOrRegex::String("**/*.tsx".to_string())],
     exclude: vec![],
     jsx_import_source: None,
+    id: Some("host_app".to_string()),
   });
   let sourcemap_chain = UniqueArc::<Vec<SourcemapChainElement>>::new(vec![]);
   let ctx = Arc::new(TransformPluginContext::new(
@@ -80,6 +81,7 @@ export default HomeScreen;
   let output = block_on(plugin.transform(ctx, &args)).unwrap().expect("plugin should transform");
   let code = output.code.expect("plugin should return code");
   assert!(code.contains("function $RefreshReg$(type, id)"));
+  assert!(code.contains("\"host_app\" + ' ' + \"/fixture/App.tsx\" + ' ' + id"));
   assert!(code.contains("import.meta.hot.accept"));
   assert!(code.contains("return <View navigation={navigation} />;"));
   assert!(!code.contains("jsx-dev-runtime"));
@@ -106,6 +108,7 @@ export default HomeScreen;
     include: vec![StringOrRegex::String("**/*.js".to_string())],
     exclude: vec![],
     jsx_import_source: None,
+    id: None,
   });
   let sourcemap_chain = UniqueArc::<Vec<SourcemapChainElement>>::new(vec![]);
   let ctx = Arc::new(TransformPluginContext::new(
@@ -144,6 +147,7 @@ $RefreshReg$(_c, 'HomeScreen');
     include: vec![StringOrRegex::String("**/*.js".to_string())],
     exclude: vec![],
     jsx_import_source: None,
+    id: None,
   });
   let sourcemap_chain = UniqueArc::<Vec<SourcemapChainElement>>::new(vec![]);
   let ctx = Arc::new(TransformPluginContext::new(
@@ -182,6 +186,7 @@ export default HomeScreen;
     include: vec![StringOrRegex::String("**/*.js".to_string())],
     exclude: vec![],
     jsx_import_source: None,
+    id: None,
   });
   let sourcemap_chain = UniqueArc::<Vec<SourcemapChainElement>>::new(vec![]);
   let ctx = Arc::new(TransformPluginContext::new(
@@ -217,6 +222,7 @@ export const value = 1;
     include: vec![StringOrRegex::String("**/*.js".to_string())],
     exclude: vec![],
     jsx_import_source: None,
+    id: None,
   });
   let sourcemap_chain = UniqueArc::<Vec<SourcemapChainElement>>::new(vec![]);
   let ctx = Arc::new(TransformPluginContext::new(
@@ -256,6 +262,7 @@ class HomeScreen extends React.Component {
     include: vec![StringOrRegex::String("**/*.js".to_string())],
     exclude: vec![],
     jsx_import_source: None,
+    id: None,
   });
   let sourcemap_chain = UniqueArc::<Vec<SourcemapChainElement>>::new(vec![]);
   let ctx = Arc::new(TransformPluginContext::new(
@@ -287,6 +294,7 @@ fn skips_modules_excluded_by_filter() {
     include: vec![StringOrRegex::String("**/*.js".to_string())],
     exclude: vec![StringOrRegex::String("**/runtime.js".to_string())],
     jsx_import_source: None,
+    id: None,
   });
   let sourcemap_chain = UniqueArc::<Vec<SourcemapChainElement>>::new(vec![]);
   let ctx = Arc::new(TransformPluginContext::new(
@@ -314,6 +322,7 @@ fn skips_internal_runtime_module_even_when_included() {
       include: vec![StringOrRegex::String("**/*.js".to_string())],
       exclude: vec![],
       jsx_import_source: None,
+      id: None,
     });
     let sourcemap_chain = UniqueArc::<Vec<SourcemapChainElement>>::new(vec![]);
     let ctx = Arc::new(TransformPluginContext::new(

@@ -18,6 +18,7 @@ pub struct RollipopReactRefreshWrapperPluginOptions {
   pub include: Vec<StringOrRegex>,
   pub exclude: Vec<StringOrRegex>,
   pub jsx_import_source: Option<String>,
+  pub id: Option<String>,
 }
 
 #[derive(Debug)]
@@ -25,15 +26,18 @@ pub struct RollipopReactRefreshWrapperPlugin {
   cwd: String,
   include: Vec<StringOrRegex>,
   exclude: Vec<StringOrRegex>,
+  id: Option<String>,
 }
 
 impl RollipopReactRefreshWrapperPlugin {
   pub fn new(options: RollipopReactRefreshWrapperPluginOptions) -> Self {
-    Self { cwd: options.cwd, include: options.include, exclude: options.exclude }
+    Self { cwd: options.cwd, include: options.include, exclude: options.exclude, id: options.id }
   }
 
   fn add_refresh_wrapper(&self, code: &str, id: &str) -> String {
     let escaped_id = to_string_literal(id);
+    let id_prefix =
+      self.id.as_ref().map(|id| format!("{} + ' ' + ", to_string_literal(id))).unwrap_or_default();
     let mut new_code = code.to_string();
     write!(
       new_code,
@@ -56,7 +60,7 @@ impl RollipopReactRefreshWrapperPlugin {
     write!(
       new_code,
       "\
-function $RefreshReg$(type, id) {{ return {ROLLIPOP_RUNTIME}.reactRefresh.register(type, {escaped_id} + ' ' + id); }}
+function $RefreshReg$(type, id) {{ return {ROLLIPOP_RUNTIME}.reactRefresh.register(type, {id_prefix}{escaped_id} + ' ' + id); }}
 function $RefreshSig$() {{ return {ROLLIPOP_RUNTIME}.reactRefresh.createSignatureFunctionForTransform(); }}
 ",
     )

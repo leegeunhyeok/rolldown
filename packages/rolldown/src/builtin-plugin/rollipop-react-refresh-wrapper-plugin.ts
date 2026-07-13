@@ -10,6 +10,7 @@ export function rollipopReactRefreshWrapperPlugin(
     include: normalizedStringOrRegex(config.include),
     exclude: normalizedStringOrRegex(config.exclude),
     jsxImportSource: config.jsxImportSource,
+    id: config.id,
   });
 }
 

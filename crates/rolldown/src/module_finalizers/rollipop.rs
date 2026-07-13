@@ -22,14 +22,20 @@ use crate::{
   SharedOptions,
   hmr::utils::HmrAstBuilder,
   rollipop::{
-    ROLLIPOP_EXPORTS_NAME, ROLLIPOP_GLOBAL_NAME, ROLLIPOP_MODULE_NAME, ROLLIPOP_REQUIRE_NAME,
+    HMR_RUNTIME_NAME, ROLLIPOP_EXPORTS_NAME, ROLLIPOP_GLOBAL_NAME, ROLLIPOP_MODULE_NAME,
+    ROLLIPOP_REQUIRE_NAME,
   },
   stages::link_stage::LinkStageOutput,
   types::linking_metadata::{LinkingMetadata, LinkingMetadataVec},
 };
 
-const FACTORY_PARAM_NAMES: [&str; 4] =
-  [ROLLIPOP_GLOBAL_NAME, ROLLIPOP_MODULE_NAME, ROLLIPOP_EXPORTS_NAME, ROLLIPOP_REQUIRE_NAME];
+const FACTORY_PARAM_NAMES: [&str; 5] = [
+  ROLLIPOP_GLOBAL_NAME,
+  ROLLIPOP_MODULE_NAME,
+  ROLLIPOP_EXPORTS_NAME,
+  ROLLIPOP_REQUIRE_NAME,
+  HMR_RUNTIME_NAME,
+];
 
 #[derive(Clone, Copy)]
 pub enum RollipopRuntimeIdMode {
@@ -339,6 +345,9 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
     }
 
     for (name, symbol_id) in scoping.iter_bindings().flat_map(|(_, bindings)| bindings) {
+      if self.is_runtime_module && name == HMR_RUNTIME_NAME {
+        continue;
+      }
       if !FACTORY_PARAM_NAMES.contains(&name.as_str()) {
         continue;
       }

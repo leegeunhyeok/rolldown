@@ -10,6 +10,7 @@ pub struct BindingRollipopReactRefreshWrapperPluginConfig {
   pub include: Option<Vec<BindingStringOrRegex>>,
   pub exclude: Option<Vec<BindingStringOrRegex>>,
   pub jsx_import_source: Option<String>,
+  pub id: Option<String>,
 }
 
 impl From<BindingRollipopReactRefreshWrapperPluginConfig>
@@ -21,6 +22,7 @@ impl From<BindingRollipopReactRefreshWrapperPluginConfig>
       include: value.include.map(bindingify_string_or_regex_array).unwrap_or_default(),
       exclude: value.exclude.map(bindingify_string_or_regex_array).unwrap_or_default(),
       jsx_import_source: value.jsx_import_source,
+      id: value.id,
     }
   }
 }

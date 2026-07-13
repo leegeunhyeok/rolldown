@@ -1,3 +1,7 @@
+mod constants;
+
+pub use constants::HMR_RUNTIME_NAME;
+
 pub const ROLLIPOP_RUNTIME: &str = include_str!("../runtime/rollipop-runtime.js");
 
 pub const ROLLIPOP_GLOBAL_NAME: &str = "global";
