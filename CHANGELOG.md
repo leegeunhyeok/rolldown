@@ -1,4 +1,11 @@
 
+## [1.0.23] - 2026-07-14
+
+### 🚀 Features
+
+- isolate Rollipop HMR runtimes by `@leegeunhyeok`
+
+
 ## [1.0.22] - 2026-07-09
 
 ### 🐛 Bug Fixes
