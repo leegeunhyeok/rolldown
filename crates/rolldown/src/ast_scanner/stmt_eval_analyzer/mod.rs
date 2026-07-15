@@ -172,6 +172,21 @@ impl<'a> StmtEvalAnalyzer<'a> {
     Some(namespace_ids.contains(&symbol_id))
   }
 
+  /// `import.meta.url` is a spec-defined side-effect-free property read, and
+  /// `import.meta.ROLLUP_FILE_URL_<referenceId>` is a placeholder the finalizer rewrites into a
+  /// `new URL(...)` expression. Other accesses like `import.meta.hot.accept()` may have side effects.
+  fn is_side_effect_free_import_meta_access(member_expr: &ast::MemberExpression) -> bool {
+    let Expression::MetaProperty(meta_property) = member_expr.object() else {
+      return false;
+    };
+    if meta_property.meta.name != "import" || meta_property.property.name != "meta" {
+      return false;
+    }
+    member_expr
+      .static_property_name()
+      .is_some_and(|name| name == "url" || name.starts_with("ROLLUP_FILE_URL_"))
+  }
+
   fn analyze_member_expr(&self, member_expr: &ast::MemberExpression) -> StmtEvalFacts {
     if self.is_expr_manual_pure_functions(member_expr.object()) {
       return StmtEvalFacts::default();
@@ -185,14 +200,8 @@ impl<'a> StmtEvalAnalyzer<'a> {
         _ => StmtEvalFacts::default(),
       };
     }
-    // Only `import.meta.url` is a spec-defined side-effect-free property read.
-    // Other accesses like `import.meta.hot.accept()` may have side effects.
-    if let ast::MemberExpression::StaticMemberExpression(static_expr) = member_expr {
-      if matches!(static_expr.object, Expression::MetaProperty(_))
-        && static_expr.property.name == "url"
-      {
-        return StmtEvalFacts::default();
-      }
+    if Self::is_side_effect_free_import_meta_access(member_expr) {
+      return StmtEvalFacts::default();
     }
     let is_global = self.is_member_expr_root_global(member_expr);
     let has_side_effect = member_expr.may_have_side_effects(self);
@@ -997,8 +1006,17 @@ mod test {
     assert!(!has_side_effect_for_tree_shaking("import.meta"));
     assert!(!has_side_effect_for_tree_shaking("const meta = import.meta"));
     assert!(!has_side_effect_for_tree_shaking("import.meta.url"));
+    assert!(!has_side_effect_for_tree_shaking("import.meta?.url"));
+    assert!(!has_side_effect_for_tree_shaking("import.meta['url']"));
+    assert!(!has_side_effect_for_tree_shaking("import.meta?.['url']"));
+    assert!(!has_side_effect_for_tree_shaking("import.meta.ROLLUP_FILE_URL_abc123"));
+    assert!(!has_side_effect_for_tree_shaking("import.meta?.ROLLUP_FILE_URL_abc123"));
+    assert!(!has_side_effect_for_tree_shaking("import.meta['ROLLUP_FILE_URL_abc123']"));
+    assert!(!has_side_effect_for_tree_shaking("import.meta?.['ROLLUP_FILE_URL_abc123']"));
+    assert!(has_side_effect_for_tree_shaking("import.meta[foo()]"));
     // Other import.meta properties are not spec-defined as side-effect-free
     assert!(has_side_effect_for_tree_shaking("import.meta.hot"));
+    assert!(has_side_effect_for_tree_shaking("import.meta['hot']"));
     // Deeper chains may throw (e.g. import.meta.nonExisting is undefined, .foo throws TypeError)
     assert!(has_side_effect_for_tree_shaking("import.meta.nonExisting.foo"));
     assert!(has_side_effect_for_tree_shaking("const { url } = import.meta"));
@@ -1547,11 +1565,11 @@ let remove15 = class {
 
   #[test]
   fn test_extract_first_part_of_member_expr_like() {
-    assert!(extract_first_part_of_member_expr_like_helper("a.b") == "a");
-    assert!(extract_first_part_of_member_expr_like_helper("styled?.div()") == "styled");
-    assert!(extract_first_part_of_member_expr_like_helper("styled()") == "styled");
-    assert!(extract_first_part_of_member_expr_like_helper("styled().div") == "styled");
-    assert!(extract_first_part_of_member_expr_like_helper("styled()()") == "styled");
+    assert_eq!(extract_first_part_of_member_expr_like_helper("a.b"), "a");
+    assert_eq!(extract_first_part_of_member_expr_like_helper("styled?.div()"), "styled");
+    assert_eq!(extract_first_part_of_member_expr_like_helper("styled()"), "styled");
+    assert_eq!(extract_first_part_of_member_expr_like_helper("styled().div"), "styled");
+    assert_eq!(extract_first_part_of_member_expr_like_helper("styled()()"), "styled");
   }
 
   fn extract_first_part_of_member_expr_like_helper(code: &str) -> String {

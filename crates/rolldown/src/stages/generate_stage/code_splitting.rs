@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, collections::VecDeque, path::Path};
+use std::{borrow::Cow, cmp::Ordering, collections::VecDeque, path::Path};
 
 use crate::{
   chunk_graph::ChunkGraph,
@@ -11,15 +11,18 @@ use itertools::Itertools;
 use oxc_index::{IndexVec, index_vec};
 use rolldown_common::{
   Chunk, ChunkIdx, ChunkKind, ChunkMeta, EntryPointKind, ExportsKind, ImportKind, ImportRecordIdx,
-  ImportRecordMeta, IndexModules, Module, ModuleIdx, ModuleNamespaceIncludedReason, ModuleTag,
-  ModuleTagBitSet, ModuleTagRegistry, PostChunkOptimizationOperation, PreserveEntrySignatures,
-  RetainedExportSymbols, SymbolRef, UsedSymbolRefs, UsedSymbolRefsBuilder, WrapKind,
+  ImportRecordMeta, IndexModules, Module, ModuleId, ModuleIdx, ModuleNamespaceIncludedReason,
+  ModuleTag, ModuleTagBitSet, ModuleTagRegistry, PostChunkOptimizationOperation,
+  PreserveEntrySignatures, RetainedExportSymbols, SymbolRef, UsedSymbolRefs, UsedSymbolRefsBuilder,
+  WrapKind,
 };
 use rolldown_error::BuildResult;
+use rolldown_std_utils::PathBufExt as _;
 use rolldown_utils::{
   BitSet, IndexBitSet, commondir,
   index_vec_ext::IndexVecRefExt,
   indexmap::FxIndexMap,
+  node_style_absolute,
   rayon::ParallelIterator,
   rustc_hash::{FxHashMapExt, FxHashSetExt},
 };
@@ -39,7 +42,6 @@ pub type IndexSplittingInfo = IndexVec<ModuleIdx, SplittingInfo>;
 
 impl GenerateStage<'_> {
   #[tracing::instrument(level = "debug", skip_all)]
-  #[expect(clippy::too_many_lines)]
   pub async fn generate_chunks(
     &mut self,
     used_symbol_refs: &mut UsedSymbolRefsBuilder,
@@ -162,35 +164,18 @@ impl GenerateStage<'_> {
         )
         .await?;
     }
-    // Merge external import namespaces at chunk level.
-    for symbol_set in self.link_output.external_import_namespace_merger.values() {
-      for (_, mut group) in symbol_set
-        .iter()
-        .filter_map(|item| {
-          let module = self.link_output.module_table[item.owner].as_normal()?;
-          self.link_output.metas[module.idx].is_included.then_some(item)
-        })
-        .into_group_map_by(|item| {
-          chunk_graph.module_to_chunk[item.owner].expect("should have chunk idx")
-        })
-      {
-        if group.len() <= 1 {
-          continue;
-        }
-        group.sort_unstable_by_key(|item| self.link_output.module_table[item.owner].exec_order());
-        let Some(idx) = group.iter().position(|item| used_symbol_refs.contains(item)) else {
-          continue;
-        };
-        // In the extreme case, idx would eq to group.len() - 1, which means the first symbol is the only one that is used.
-        // `idx + 1` would eq to len of the group, the iteration is still safe,
-        // https://play.rust-lang.org/?version=stable&mode=debug&edition=2024&gist=38bb53e79b4f7aaa73ef9d6b4cfb3cc2
-        for symbol in &group[idx + 1..] {
-          self.link_output.symbol_db.link(**symbol, *group[idx]);
-        }
-      }
-    }
+    self.merge_external_import_symbols(&chunk_graph, used_symbol_refs);
 
     chunk_graph.sort_chunk_modules(self.link_output, self.options);
+
+    self.find_entry_level_external_module(&mut chunk_graph);
+
+    self.finalized_module_namespace_ref_usage();
+
+    // Runs after the two passes above invalidated the link-time reasons for including the
+    // runtime module, and before chunk exec-order assignment so a dropped runtime chunk is
+    // tombstoned like any other removed chunk.
+    self.sweep_unused_runtime_module(&mut chunk_graph, used_symbol_refs);
 
     chunk_graph
       .chunk_table
@@ -253,23 +238,48 @@ impl GenerateStage<'_> {
     // EntryPoint (is_user_defined: true) < EntryPoint (is_user_defined: false) or Common
     // [order by chunk index]               [order by exec order]
 
-    let sorted_chunk_idx_vec = chunk_graph
-      .chunk_table
-      .iter_enumerated()
-      .sorted_unstable_by_key(|(index, chunk)| match &chunk.kind {
-        ChunkKind::EntryPoint { meta, .. } if meta.contains(ChunkMeta::UserDefinedEntry) => {
-          (0, index.raw())
-        }
-        _ => (1, chunk.exec_order),
-      })
-      .map(|(idx, _)| idx)
-      .collect::<Vec<_>>();
-
-    chunk_graph.sorted_chunk_idx_vec = sorted_chunk_idx_vec;
-
-    self.find_entry_level_external_module(&mut chunk_graph);
+    chunk_graph.rebuild_sorted_chunk_idx_vec();
 
     Ok(chunk_graph)
+  }
+
+  /// Merge symbols that import the same binding from the same external module, now that chunk
+  /// assignment is known. Merging is strictly per chunk: the canonical symbol of a group always
+  /// stays inside the chunk that declares its members, so every chunk keeps rendering its own
+  /// `import ... from 'ext'` statement and cross-chunk references keep flowing through the
+  /// regular cross-chunk import/export machinery (the constraint behind #3405).
+  fn merge_external_import_symbols(
+    &mut self,
+    chunk_graph: &ChunkGraph,
+    used_symbol_refs: &UsedSymbolRefsBuilder,
+  ) {
+    // Merge external import namespaces at chunk level.
+    for symbol_set in self.link_output.external_import_namespace_merger.values() {
+      for (_, mut group) in symbol_set
+        .iter()
+        .filter_map(|item| {
+          let module = self.link_output.module_table[item.owner].as_normal()?;
+          self.link_output.metas[module.idx].is_included.then_some(item)
+        })
+        .into_group_map_by(|item| {
+          chunk_graph.module_to_chunk[item.owner].expect("should have chunk idx")
+        })
+      {
+        if group.len() <= 1 {
+          continue;
+        }
+        group.sort_unstable_by_key(|item| self.link_output.module_table[item.owner].exec_order());
+        let Some(idx) = group.iter().position(|item| used_symbol_refs.contains(item)) else {
+          continue;
+        };
+        // In the extreme case, idx would eq to group.len() - 1, which means the first symbol is the only one that is used.
+        // `idx + 1` would eq to len of the group, the iteration is still safe,
+        // https://play.rust-lang.org/?version=stable&mode=debug&edition=2024&gist=38bb53e79b4f7aaa73ef9d6b4cfb3cc2
+        for symbol in &group[idx + 1..] {
+          self.link_output.symbol_db.link(**symbol, *group[idx]);
+        }
+      }
+    }
   }
 
   pub fn ensure_lazy_module_initialization_order(&self, chunk_graph: &mut ChunkGraph) {
@@ -329,7 +339,7 @@ impl GenerateStage<'_> {
         })
         .filter_map(|idx| {
           let module = self.link_output.module_table[idx].as_normal()?;
-          (!self.link_output.metas[module.idx].original_wrap_kind().is_none()).then_some(idx)
+          (!self.link_output.metas[module.idx].wrap_kind().is_none()).then_some(idx)
         })
         .collect::<FxHashSet<_>>();
       let chunk_module_to_exec_order = chunk
@@ -345,7 +355,7 @@ impl GenerateStage<'_> {
       let mut none_wrapped_module_to_wrapped_dependency_length = FxHashMap::default();
       let js_import_order = self.js_import_order(&roots, &chunk_module_to_exec_order);
       for idx in js_import_order {
-        match self.link_output.metas[idx].original_wrap_kind() {
+        match self.link_output.metas[idx].wrap_kind() {
           WrapKind::None => {
             if !wrapped_modules.is_empty() {
               none_wrapped_module_to_wrapped_dependency_length.insert(idx, wrapped_modules.len());
@@ -402,7 +412,7 @@ impl GenerateStage<'_> {
         FxHashMap::default();
       let mut remove_map: FxHashMap<ModuleIdx, Vec<ImportRecordIdx>> = FxHashMap::default();
       for (module_idx, (importer_idx, rec_idx)) in module_init_position {
-        match self.link_output.metas[module_idx].original_wrap_kind() {
+        match self.link_output.metas[module_idx].wrap_kind() {
           WrapKind::None => {
             if let Some(deps_length) =
               none_wrapped_module_to_wrapped_dependency_length.get(&module_idx)
@@ -687,16 +697,21 @@ impl GenerateStage<'_> {
       vec.sort_unstable_by_key(|idx| self.link_output.module_table[*idx].exec_order());
       chunk_graph.chunk_table[chunk_idx].entry_level_external_module_idx = vec;
     }
-    // re propagate `meta.has_dynamic_exports` for affect modules
+    // Re-propagate `meta.has_dynamic_exports` for affected modules: the seeds (modules whose
+    // external star re-exports were just flattened) plus every transitive importer, since any
+    // module whose own star chain passes through a seed derived its flag from the seed's
+    // pre-flattening value. Enqueue importers on first discovery — the seeds themselves are
+    // already members, so testing membership on pop would skip them and never traverse.
     let mut q = invalidated_modules.iter().copied().collect::<VecDeque<_>>();
     while let Some(idx) = q.pop_front() {
-      if !invalidated_modules.insert(idx) {
-        continue;
-      }
       let Module::Normal(module) = &self.link_output.module_table[idx] else {
         continue;
       };
-      q.extend(module.importers_idx.iter());
+      for importer_idx in module.importers_idx.iter().copied() {
+        if invalidated_modules.insert(importer_idx) {
+          q.push_back(importer_idx);
+        }
+      }
     }
 
     if invalidated_modules.is_empty() {
@@ -719,6 +734,20 @@ impl GenerateStage<'_> {
   // - https://github.com/rollup/rollup/blob/99d4bee3277b96b30e871fb471f6c7ed55f94850/src/Bundle.ts?plain=1#L267-L278
   // - https://github.com/rollup/rollup/blob/99d4bee3277b96b30e871fb471f6c7ed55f94850/src/utils/commondir.ts?plain=1#L4-L24
   pub fn get_common_dir_of_all_modules(&self, modules: &[Module]) -> Option<String> {
+    /// A module id usable for the common-dir computation: an absolute
+    /// filesystem path, with rooted-but-volume-less ids (`/favicon.ico` from a
+    /// plugin) anchored to the cwd volume root (a drive or UNC share). Such ids
+    /// are classified `Bare` on Windows even though Node treats them as
+    /// absolute; leaving them out here would make the input base and the
+    /// preserve-modules chunk names disagree about where the module lives.
+    fn common_dir_input<'a>(id: &'a ModuleId, cwd: &Path) -> Option<Cow<'a, str>> {
+      if id.is_path() {
+        return Some(Cow::Borrowed(id.as_ref()));
+      }
+      let glued = node_style_absolute(Path::new(id.as_str()), cwd)?;
+      Some(Cow::Owned(glued.into_owned().expect_into_string()))
+    }
+
     let mut ret: Option<String> = None;
     let iter = modules.iter().filter_map(|m| match m {
       Module::Normal(item) => {
@@ -728,25 +757,25 @@ impl GenerateStage<'_> {
         if self.options.preserve_modules
           || self.link_output.user_defined_entry_modules.contains(&item.idx)
         {
-          item.id.is_path().then_some(item.id.as_ref())
+          common_dir_input(&item.id, &self.options.cwd)
         } else {
           None
         }
       }
-      Module::External(external_module) => {
-        if self.options.preserve_modules {
-          external_module.id.is_path().then_some(external_module.id.as_ref())
-        } else {
-          None
-        }
-      }
+      // External modules never produce preserved chunks, so they must not
+      // affect preserved chunk names: Rollup's `getIncludedModules` keeps
+      // internal modules only. An absolute external id (e.g. a plugin
+      // resolving `/favicon` with `external: true`) would otherwise drag the
+      // input base up to the filesystem root and nest every real chunk under
+      // the entry's absolute path.
+      Module::External(_) => None,
     });
     let mut modules_count = 0;
     for id in iter {
       if let Some(ref mut ret_id) = ret {
-        *ret_id = commondir::extract_longest_common_path(ret_id.as_str(), id);
+        *ret_id = commondir::extract_longest_common_path(ret_id.as_str(), &id);
       } else {
-        ret = Some(id.to_string());
+        ret = Some(id.into_owned());
       }
       modules_count += 1;
     }

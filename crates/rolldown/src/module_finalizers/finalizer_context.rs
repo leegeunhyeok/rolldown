@@ -2,16 +2,19 @@ use rolldown_common::{
   AstScopes, Chunk, ChunkIdx, ConstExportMeta, ImportRecordIdx, IndexModules, ModuleIdx,
   ModuleType, NormalModule, PathsOutputOption, RenderedConcatenatedModuleParts,
   RetainedExportSymbols, RuntimeModuleBrief, SharedFileEmitter, StmtInfos, SymbolRef, SymbolRefDb,
+  WrapKind,
 };
 
 pub type FinalizerMutableFields = (
   FxIndexMap<ImportRecordIdx, String>, // transferred_import_record
   RenderedConcatenatedModuleParts,     // rendered_concatenated_wrapped_module_parts
+  Vec<BuildDiagnostic>,                // errors
 );
 
 use oxc::ast_visit::VisitMut as _;
 use rolldown_ecmascript::EcmaAst;
 use rolldown_ecmascript_utils::AstFactory;
+use rolldown_error::BuildDiagnostic;
 use rolldown_utils::indexmap::{FxIndexMap, FxIndexSet};
 use rustc_hash::{FxHashMap, FxHashSet};
 
@@ -20,7 +23,7 @@ use crate::{
   chunk_graph::ChunkGraph,
   module_finalizers::{ScopeHoistingFinalizer, TraverseState},
   stages::link_stage::SafelyMergeCjsNsInfo,
-  types::linking_metadata::{LinkingMetadata, LinkingMetadataVec},
+  types::linking_metadata::{EsmInitTarget, LinkingMetadata, LinkingMetadataVec},
 };
 
 pub struct ScopeHoistingFinalizerContext<'me> {
@@ -49,7 +52,39 @@ pub struct ScopeHoistingFinalizerContext<'me> {
   pub has_enum_inlining: bool,
 }
 
+/// How the finalizer must wrap the current module, resolved once from its linking metadata.
+#[derive(Clone, Copy, Debug)]
+pub(super) enum ModuleWrapperMode {
+  /// No wrapper declaration is emitted for this module.
+  None,
+  /// CJS interop wrapper (`__commonJS`); carries the wrapper symbol.
+  InteropCjs(SymbolRef),
+  /// ESM interop wrapper (`__esm`); carries the init target the call sites reference.
+  InteropEsm(EsmInitTarget),
+}
+
 impl<'me> ScopeHoistingFinalizerContext<'me> {
+  /// Classify how this module's wrapper is emitted. Replaces the finalizer's inline
+  /// `wrap_kind() + wrapper-statement-included` checks with a single view so all wrapper and
+  /// `init_*()` decisions read the same source of truth.
+  pub(super) fn wrapper_mode(&self) -> ModuleWrapperMode {
+    let legacy_wrapper_is_included = self
+      .linking_info
+      .wrapper_stmt_info
+      .is_some_and(|stmt_idx| self.linking_info.stmt_info_included.has_bit(stmt_idx));
+
+    if matches!(self.linking_info.wrap_kind(), WrapKind::Cjs) && legacy_wrapper_is_included {
+      return ModuleWrapperMode::InteropCjs(
+        self.linking_info.wrapper_ref.expect("included CJS wrapper should have a symbol"),
+      );
+    }
+
+    match self.linking_info.esm_init_target() {
+      Some(target) if legacy_wrapper_is_included => ModuleWrapperMode::InteropEsm(target),
+      _ => ModuleWrapperMode::None,
+    }
+  }
+
   #[tracing::instrument(level = "trace", skip_all)]
   pub fn finalize_normal_module(
     self,
@@ -89,9 +124,33 @@ impl<'me> ScopeHoistingFinalizerContext<'me> {
         transferred_import_record,
         rendered_concatenated_wrapped_module_parts: RenderedConcatenatedModuleParts::default(),
         json_module_inlined_prop: need_inline_json_prop.then(|| Box::new(FxHashMap::default())),
+        missing_file_reference_ids: FxIndexMap::default(),
       };
       finalizer.visit_program(oxc_program);
-      (finalizer.transferred_import_record, finalizer.rendered_concatenated_wrapped_module_parts)
+
+      let missing_file_reference_ids = finalizer.missing_file_reference_ids;
+      let errors = if missing_file_reference_ids.is_empty() {
+        vec![]
+      } else {
+        let module = finalizer.ctx.module;
+        missing_file_reference_ids
+          .into_iter()
+          .map(|(reference_id, span)| {
+            BuildDiagnostic::file_not_found(
+              reference_id.as_str(),
+              module.id.to_string(),
+              module.ecma_view.source.clone(),
+              span,
+            )
+          })
+          .collect()
+      };
+
+      (
+        finalizer.transferred_import_record,
+        finalizer.rendered_concatenated_wrapped_module_parts,
+        errors,
+      )
     })
   }
 }

@@ -48,7 +48,7 @@ fn wrap_module_recursively(ctx: &mut Context, target: ModuleIdx) {
       ExportsKind::Esm | ExportsKind::None => WrapKind::Esm,
       ExportsKind::CommonJs => WrapKind::Cjs,
     };
-    ctx.linking_infos[target].sync_wrap_kind(new_wrap_kind);
+    ctx.linking_infos[target].set_wrap_kind(new_wrap_kind);
   }
 
   module.import_records.iter().for_each(|rec| {
@@ -171,7 +171,7 @@ impl LinkStage<'_> {
         };
         if cjs_exports_kind_modules.contains(&idx) {
           // If the module is CommonJs, we need to wrap it.
-          linking_info.update_wrap_kind(WrapKind::Cjs);
+          linking_info.set_wrap_kind(WrapKind::Cjs);
         } else {
           // If the module is a pure esm, only exports function or expression without side
           // effects and is not execution order sensitive , we don't need to wrap it.
@@ -179,11 +179,7 @@ impl LinkStage<'_> {
             && !module.meta.contains(EcmaViewMeta::ExecutionOrderSensitive)
             && module.import_records.is_empty()
             && !linking_info.required_by_other_module;
-          linking_info.update_wrap_kind(if avoid_wrapping {
-            WrapKind::None
-          } else {
-            WrapKind::Esm
-          });
+          linking_info.set_wrap_kind(if avoid_wrapping { WrapKind::None } else { WrapKind::Esm });
         }
       }
     }
@@ -222,8 +218,8 @@ pub fn create_wrapper(
     //   });
     //
     WrapKind::Cjs => {
-      let wrapper_ref = symbols
-        .create_facade_root_symbol_ref(module.idx, &format!("require_{}", &module.repr_name));
+      let wrapper_ref =
+        symbols.create_facade_root_symbol_ref(module.idx, &format!("require_{}", module.repr_name));
 
       let stmt_info = StmtInfo {
         declared_symbols: smallvec![TaggedSymbolRef::normal(wrapper_ref)],
@@ -254,7 +250,7 @@ pub fn create_wrapper(
     //
     WrapKind::Esm => {
       let wrapper_ref =
-        symbols.create_facade_root_symbol_ref(module.idx, &format!("init_{}", &module.repr_name));
+        symbols.create_facade_root_symbol_ref(module.idx, &format!("init_{}", module.repr_name));
 
       let stmt_info = StmtInfo {
         declared_symbols: smallvec![TaggedSymbolRef::normal(wrapper_ref)],

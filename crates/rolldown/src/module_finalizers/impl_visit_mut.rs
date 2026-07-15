@@ -2,7 +2,7 @@ use itertools::Itertools;
 use oxc::ast::AstType;
 use oxc::ast::ast::{AssignmentTarget, JSXMemberExpression};
 use oxc::{
-  allocator::{self, IntoIn, TakeIn},
+  allocator::{self, IntoIn, ReplaceWith, TakeIn},
   ast::{
     NONE,
     ast::{self, BindingPattern, Expression, SimpleAssignmentTarget, Statement},
@@ -12,11 +12,14 @@ use oxc::{
   span::{SPAN, Span},
 };
 use oxc_str::CompactStr;
-use rolldown_common::{ConcatenateWrappedModuleKind, SymbolRef, ThisExprReplaceKind, WrapKind};
+use rolldown_common::{ConcatenateWrappedModuleKind, SymbolRef, ThisExprReplaceKind};
 use rolldown_ecmascript::ToSourceString;
-use rolldown_ecmascript_utils::{ExpressionExt, JsxExt, JsxMemberExpressionObjectExt};
+use rolldown_ecmascript_utils::{
+  EsmWrapperBodyKind, EsmWrapperCallKind, EsmWrapperStmtOptions, ExpressionExt, JsxExt,
+  JsxMemberExpressionObjectExt,
+};
 
-use crate::module_finalizers::{KeepNameId, TraverseState};
+use crate::module_finalizers::{KeepNameId, ModuleWrapperMode, TraverseState};
 
 use super::ScopeHoistingFinalizer;
 
@@ -104,14 +107,8 @@ impl<'ast> VisitMut<'ast> for ScopeHoistingFinalizer<'_, 'ast> {
     }
 
     // check if we need to add wrapper
-    let included_wrap_kind = self
-      .ctx
-      .linking_info
-      .wrapper_stmt_info
-      .is_some_and(|idx| self.ctx.linking_info.stmt_info_included.has_bit(idx))
-      .then_some(self.ctx.linking_info.wrap_kind());
-
-    self.needs_hosted_top_level_binding = matches!(included_wrap_kind, Some(WrapKind::Esm));
+    let wrapper_mode = self.ctx.wrapper_mode();
+    self.needs_hosted_top_level_binding = matches!(wrapper_mode, ModuleWrapperMode::InteropEsm(_));
 
     // the order should be
     // 1. module namespace object declaration
@@ -148,9 +145,9 @@ impl<'ast> VisitMut<'ast> for ScopeHoistingFinalizer<'_, 'ast> {
     self.insert_keep_name_statements(&mut program.body);
     self.keep_name_statement_to_insert.clear();
 
-    match included_wrap_kind {
-      Some(WrapKind::Cjs) => {
-        let wrap_ref_name = self.canonical_name_for(self.ctx.linking_info.wrapper_ref.unwrap());
+    match wrapper_mode {
+      ModuleWrapperMode::InteropCjs(wrapper_ref) => {
+        let wrap_ref_name = self.canonical_name_for(wrapper_ref);
         let commonjs_ref = if self.ctx.options.profiler_names {
           self.canonical_ref_for_runtime("__commonJS")
         } else {
@@ -172,7 +169,7 @@ impl<'ast> VisitMut<'ast> for ScopeHoistingFinalizer<'_, 'ast> {
           self.ctx.linking_info.is_tla_or_contains_tla_dependency,
         ));
       }
-      Some(WrapKind::Esm) => {
+      ModuleWrapperMode::InteropEsm(target) => {
         let is_concatenated_wrapped_module = !matches!(
           self.ctx.linking_info.concatenated_wrapped_module_kind,
           ConcatenateWrappedModuleKind::None
@@ -207,7 +204,7 @@ impl<'ast> VisitMut<'ast> for ScopeHoistingFinalizer<'_, 'ast> {
         // Otherwise we'd have marked a side-effecting `init_*()` as `@__PURE__` and DCE could
         // wrongly drop it. Turns any misclassification into a loud failure across the fixtures.
         debug_assert!(
-          !self.ctx.linking_info.init_is_noop || stmts_inside_closure.is_empty(),
+          !target.init_is_noop || stmts_inside_closure.is_empty(),
           "init_is_noop set but the __esm closure is non-empty for {}",
           self.ctx.module.stable_id
         );
@@ -266,7 +263,7 @@ impl<'ast> VisitMut<'ast> for ScopeHoistingFinalizer<'_, 'ast> {
           self.canonical_ref_for_runtime("__esmMin")
         };
         let (esm_ref_expr, _) = self.finalized_expr_for_symbol_ref(esm_ref, false, false);
-        let wrap_ref_name = self.canonical_name_for(self.ctx.linking_info.wrapper_ref.unwrap());
+        let wrap_ref_name = self.canonical_name_for(target.wrapper_ref);
 
         if matches!(
           self.ctx.linking_info.concatenated_wrapped_module_kind,
@@ -281,18 +278,25 @@ impl<'ast> VisitMut<'ast> for ScopeHoistingFinalizer<'_, 'ast> {
           return;
         }
 
-        program.body.push(self.ast_factory.make_esm_wrapper_stmt(
-          wrap_ref_name,
-          esm_ref_expr,
-          stmts_inside_closure,
-          self.ctx.options.profiler_names,
-          self.ctx.options.optimization.is_pife_for_module_wrappers_enabled(),
-          &self.ctx.module.stable_id,
-          self.ctx.linking_info.is_tla_or_contains_tla_dependency,
-        ));
+        program.body.push(self.ast_factory.make_esm_wrapper_stmt(EsmWrapperStmtOptions {
+          binding_name: wrap_ref_name,
+          esm_fn_expr: esm_ref_expr,
+          statements: stmts_inside_closure,
+          profiler_name:
+            self.ctx.options.profiler_names.then_some(self.ctx.module.stable_id.as_str()),
+          call_kind: if self.ctx.options.optimization.is_pife_for_module_wrappers_enabled() {
+            EsmWrapperCallKind::Pife
+          } else {
+            EsmWrapperCallKind::Plain
+          },
+          body_kind: if self.ctx.linking_info.is_tla_or_contains_tla_dependency {
+            EsmWrapperBodyKind::Async
+          } else {
+            EsmWrapperBodyKind::Sync
+          },
+        }));
       }
-      Some(WrapKind::None) => {}
-      None => {
+      ModuleWrapperMode::None => {
         program.body.splice(0..0, declaration_of_module_namespace_object);
       }
     }
@@ -400,16 +404,17 @@ impl<'ast> VisitMut<'ast> for ScopeHoistingFinalizer<'_, 'ast> {
                 // - visit_binding_identifier won't re-rename
                 id.symbol_id.get_mut().take();
 
-                let fn_expr = expr.take_in(&self.alloc);
                 let name_ref = self.canonical_ref_for_runtime("__name");
                 let (finalized_callee, _) =
                   self.finalized_expr_for_symbol_ref(name_ref, false, false);
-                *expr = self.ast_factory.make_keep_name_call(
-                  &original_name,
-                  fn_expr,
-                  finalized_callee,
-                  true,
-                );
+                expr.replace_with(|fn_expr| {
+                  self.ast_factory.make_keep_name_call(
+                    &original_name,
+                    fn_expr,
+                    finalized_callee,
+                    true,
+                  )
+                });
               }
             }
           }
@@ -504,6 +509,10 @@ impl<'ast> VisitMut<'ast> for ScopeHoistingFinalizer<'_, 'ast> {
         }
 
         let ast::Expression::ChainExpression(chain_expr) = expr else { unreachable!() };
+        // import.meta.hot?.accept()
+        if let ast::ChainElement::CallExpression(call_expr) = &mut chain_expr.expression {
+          self.rewrite_hot_accept_call_deps(call_expr);
+        }
         let chain_span = chain_expr.span;
         if let Some(new_expr) = chain_expr
           .expression
@@ -780,16 +789,21 @@ impl<'ast> VisitMut<'ast> for ScopeHoistingFinalizer<'_, 'ast> {
         ) {
           decl.body.body.insert(0, element);
         }
-        if let Some(new_decl) = self.get_transformed_class_decl(decl) {
-          *it = new_decl;
-          // Clear symbol_id on class expression's id to prevent visit_expression
-          // from inserting a duplicate __name static block during walk
-          if let ast::Declaration::VariableDeclaration(var_decl) = it {
-            if let Some(declarator) = var_decl.declarations.first_mut() {
-              if let Some(ast::Expression::ClassExpression(class_expr)) = &mut declarator.init {
-                if let Some(id) = &mut class_expr.id {
-                  id.symbol_id.get_mut().take();
-                }
+        it.replace_with(|old| {
+          let ast::Declaration::ClassDeclaration(class_box) = old else { unreachable!() };
+          match self.get_transformed_class_decl(class_box) {
+            Ok(new_decl) => new_decl,
+            Err(class_box) => ast::Declaration::ClassDeclaration(class_box),
+          }
+        });
+        // Clear symbol_id on class expression's id to prevent visit_expression
+        // from inserting a duplicate __name static block during walk
+        // (`it` is only a `VariableDeclaration` when the class was transformed above).
+        if let ast::Declaration::VariableDeclaration(var_decl) = it {
+          if let Some(declarator) = var_decl.declarations.first_mut() {
+            if let Some(ast::Expression::ClassExpression(class_expr)) = &mut declarator.init {
+              if let Some(id) = &mut class_expr.id {
+                id.symbol_id.get_mut().take();
               }
             }
           }

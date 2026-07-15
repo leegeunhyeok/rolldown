@@ -117,10 +117,12 @@ pub struct ReactCompilerDynamicGating {
 impl From<ReactCompilerOptions> for oxc_react_compiler::PluginOptions {
   fn from(value: ReactCompilerOptions) -> Self {
     let mut options = oxc_react_compiler::PluginOptions::default();
-    if let Some(compilation_mode) = value.compilation_mode {
+    if let Some(compilation_mode) = value.compilation_mode.and_then(|mode| mode.parse().ok()) {
       options.compilation_mode = compilation_mode;
     }
-    if let Some(panic_threshold) = value.panic_threshold {
+    if let Some(panic_threshold) =
+      value.panic_threshold.and_then(|threshold| threshold.parse().ok())
+    {
       options.panic_threshold = panic_threshold;
     }
     if let Some(target) = value.target {
@@ -129,9 +131,7 @@ impl From<ReactCompilerOptions> for oxc_react_compiler::PluginOptions {
     if let Some(no_emit) = value.no_emit {
       options.no_emit = no_emit;
     }
-    if value.output_mode.is_some() {
-      options.output_mode = value.output_mode;
-    }
+    options.output_mode = value.output_mode.and_then(|mode| mode.parse().ok());
     if let Some(ignore_use_no_forget) = value.ignore_use_no_forget {
       options.ignore_use_no_forget = ignore_use_no_forget;
     }

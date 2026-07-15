@@ -263,11 +263,12 @@ impl PluginDriver {
     magic_string_tx: Option<std::sync::mpsc::Sender<rolldown_common::SourceMapGenMsg>>,
     code_changed_by_plugins: &mut Option<Vec<String>>,
   ) -> Result<String> {
+    // MARK: - Rollipop
     // Check transform cache
     let transform_cache_manager = self.meta.get::<TransformCacheManager>();
     let cache_key = transform_cache_manager
       .as_ref()
-      .map(|_| xxh3_128(format!("{}\0{}", id, &original_code).as_bytes()));
+      .map(|_| xxh3_128(format!("{id}\0{original_code}").as_bytes()));
 
     if let (Some(cache), Some(key)) = (&transform_cache_manager, cache_key) {
       if let Some(entry) = cache.get(key) {

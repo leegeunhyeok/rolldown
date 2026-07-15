@@ -2,13 +2,26 @@ use crate::stages::link_stage::{ModuleInclusionVec, ModuleNamespaceReasonVec, St
 use oxc_index::IndexVec;
 use oxc_str::CompactStr;
 use rolldown_common::{
-  ConcatenateWrappedModuleKind, EntryPointKind, ImportRecordIdx, MemberExprRefResolutionMap,
-  ModuleIdx, ModuleNamespaceIncludedReason, ResolvedExport, RuntimeHelper, StmtInfoIdx, SymbolRef,
-  WrapKind, dynamic_import_usage::DynamicImportExportsUsage,
+  ConcatenateWrappedModuleKind, EntryPointKind, ImportRecordIdx, ImportRecordMeta,
+  MemberExprRefResolutionMap, ModuleIdx, ModuleNamespaceIncludedReason, OutputFormat,
+  ResolvedExport, RuntimeHelper, StmtInfoIdx, SymbolRef, WrapKind,
+  dynamic_import_usage::DynamicImportExportsUsage,
 };
 use rolldown_utils::IndexBitSet;
 use rolldown_utils::indexmap::{FxIndexMap, FxIndexSet};
 use rustc_hash::{FxHashMap, FxHashSet};
+
+/// The interop ESM wrapper a wrapped (`WrapKind::Esm`) module exposes: the `init_*()` binding the
+/// finalizer emits its call sites against, plus whether calling it is a no-op.
+///
+/// Extracted so wrapper declaration emission and `init_*()` call sites read the same view of
+/// [`LinkingMetadata`] instead of reaching into the raw fields independently. This keeps a single
+/// place for later strict-execution-order wrapper paths to extend.
+#[derive(Clone, Copy, Debug)]
+pub struct EsmInitTarget {
+  pub(crate) wrapper_ref: SymbolRef,
+  pub(crate) init_is_noop: bool,
+}
 
 /// Module metadata about linking
 #[derive(Debug, Default)]
@@ -39,13 +52,7 @@ pub struct LinkingMetadata {
   /// `wrapper_ref` is the `require_cjs` identifier in above example.
   pub wrapper_ref: Option<SymbolRef>,
   pub wrapper_stmt_info: Option<StmtInfoIdx>,
-  /// Because when `strictExecutionOrder` is enabled, all modules will be wrapped
-  /// we need to store the original wrap kind that used for
-  /// [rolldown::stages::generate_stage::code_splitting::GenerateStage::ensure_lazy_module_initialization_order] analysis
-  original_wrap_kind: WrapKind,
-  /// The `wrap_kind` used for linking and code generation.
-  /// Intent to make those two fields private, so that we could ensure they are mutated in a more
-  /// safe way.
+  /// The module representation decided during linking.
   wrap_kind: WrapKind,
   // Store the export info for each module, including export named declaration and export star declaration.
   pub resolved_exports: FxHashMap<CompactStr, ResolvedExport>,
@@ -148,22 +155,45 @@ impl LinkingMetadata {
   }
 
   #[inline]
-  pub fn original_wrap_kind(&self) -> WrapKind {
-    self.original_wrap_kind
-  }
-
-  /// Synchronize the `wrap_kind` with the original wrap kind.
-  #[inline]
-  pub fn sync_wrap_kind(&mut self, wrap_kind: WrapKind) {
-    self.original_wrap_kind = wrap_kind;
+  pub fn set_wrap_kind(&mut self, wrap_kind: WrapKind) {
     self.wrap_kind = wrap_kind;
   }
 
-  /// Use this api with caution, ideally it should be only used for https://github.com/rolldown/rolldown/blob/76350f2b77364dbba29ba93562589a6eba6211dd/crates/rolldown/src/stages/link_stage/wrapping.rs?plain=1#L165-L185
-  /// override the wrapping kind when `strictExecutionOrder` is enabled.
-  #[inline]
-  pub fn update_wrap_kind(&mut self, wrap_kind: WrapKind) {
-    self.wrap_kind = wrap_kind;
+  /// The wrapped-ESM init target of a module, derived from its linking metadata alone: a
+  /// `WrapKind::Esm` module with an allocated wrapper symbol exposes an `init_*()` the finalizer
+  /// emits; anything else has none.
+  pub fn esm_init_target(&self) -> Option<EsmInitTarget> {
+    if !matches!(self.wrap_kind(), WrapKind::Esm) {
+      return None;
+    }
+    self
+      .wrapper_ref
+      .map(|wrapper_ref| EsmInitTarget { wrapper_ref, init_is_noop: self.init_is_noop })
+  }
+
+  /// Whether the namespace-object declaration will emit a `__reExport(ns, <external>)` call for
+  /// this `export * from <external>` record when the namespace is rendered.
+  ///
+  /// This is the single source of truth for the emission decision: the module finalizer emits
+  /// the call through it, and any pass that needs to predict the emission must call it instead
+  /// of re-deriving the condition. In ESM output an entry-level external star
+  /// re-export is flattened to a chunk-level `export * from '<external>'` statement instead, so
+  /// no runtime call is needed — unless the namespace object is genuinely observed
+  /// ([`ModuleNamespaceIncludedReason::Unknown`]), in which case the namespace must still merge
+  /// the external's exports at runtime.
+  pub fn ns_star_external_re_export_emitted(
+    &self,
+    rec_meta: ImportRecordMeta,
+    format: OutputFormat,
+  ) -> bool {
+    match format {
+      OutputFormat::Esm => {
+        !rec_meta.contains(ImportRecordMeta::EntryLevelExternal)
+          || self.module_namespace_included_reason.contains(ModuleNamespaceIncludedReason::Unknown)
+      }
+      // MARK: - Rollipop
+      OutputFormat::Cjs | OutputFormat::Iife | OutputFormat::Umd | OutputFormat::Rollipop => true,
+    }
   }
 
   pub fn referenced_canonical_exports_symbols<'b, 'a: 'b>(
