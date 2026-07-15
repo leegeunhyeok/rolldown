@@ -48,6 +48,14 @@ pub fn render_rollipop<'code>(
   source_joiner.append_source(concat_string!("(function(", ROLLIPOP_GLOBAL_NAME, ") {"));
   render_runtime_module(ctx, module_sources, &mut source_joiner);
   render_rollipop_runtime(&mut source_joiner);
+  if ctx.options.is_dev_mode_enabled()
+    && let Some(prelude) = crate::hmr::module_graph_delta::render_register_graph_source(
+      &ctx.link_output.module_table,
+      ctx.chunk.modules.iter().copied(),
+    )
+  {
+    source_joiner.append_source(prelude);
+  }
   render_module_factories(ctx, module_sources, &mut source_joiner);
   source_joiner.append_source(render_entry_execution(ctx));
   source_joiner.append_source(concat!(
