@@ -1,4 +1,11 @@
 
+## [1.0.24] - 2026-07-15
+
+### 🚀 Features
+
+- wrap Rollipop HMR patches by `@leegeunhyeok`
+
+
 ## [1.0.23] - 2026-07-14
 
 ### 🚀 Features
