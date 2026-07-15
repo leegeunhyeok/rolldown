@@ -1,6 +1,8 @@
 mod constants;
+mod hmr;
 
 pub use constants::HMR_RUNTIME_NAME;
+pub use hmr::wrap_hmr_patch;
 
 pub const ROLLIPOP_RUNTIME: &str = include_str!("../runtime/rollipop-runtime.js");
 

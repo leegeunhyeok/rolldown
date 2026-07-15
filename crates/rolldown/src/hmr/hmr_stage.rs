@@ -727,7 +727,13 @@ impl<'a, Fs: FileSystem + Clone + 'static> HmrStage<'a, Fs> {
         .join(",")
     ));
 
-    let (mut code, mut map) = source_joiner.join();
+    // MARK: - Rollipop
+    let (mut code, mut map) =
+      if matches!(self.options.format, rolldown_common::OutputFormat::Rollipop) {
+        crate::rollipop::wrap_hmr_patch(source_joiner, &self.options.id)
+      } else {
+        source_joiner.join()
+      };
 
     let hmr_patch_id = self.next_hmr_patch_id.fetch_add(1, Ordering::Relaxed);
     let filename = format!("hmr_patch_{hmr_patch_id}.js");
