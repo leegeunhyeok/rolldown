@@ -1,4 +1,15 @@
 
+## [1.0.25] - 2026-07-16
+
+### 🚀 Features
+
+- register Rollipop HMR graphs by `@leegeunhyeok`
+
+### ⚙️ Miscellaneous Tasks
+
+- sync upstream rolldown v1.2.0 by `@leegeunhyeok`
+
+
 ## [1.0.24] - 2026-07-15
 
 ### 🚀 Features
