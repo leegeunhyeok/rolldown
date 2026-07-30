@@ -1,5 +1,5 @@
 use rayon::iter::ParallelIterator;
-use rolldown_common::{Module, ModuleIdx, RuntimeHelper};
+use rolldown_common::{Module, ModuleIdx, RuntimeHelper, SymbolRef};
 use rolldown_utils::{index_vec_ext::IndexVecRefExt, indexmap::FxIndexSet};
 
 use super::LinkStage;
@@ -15,6 +15,28 @@ impl LinkStage<'_> {
         if !meta.depended_runtime_helper.is_empty() {
           extended_dependencies.insert(self.runtime.id());
         }
+
+        // Set when this module's own included code reads an external module as an ES module. The
+        // `__toESM` that renders it is requested by the import statement, which may sit in a
+        // module tree-shaking already dropped, so the edge to the runtime has to be (re)derived
+        // from the reference itself. See `chunk_recorded_external_interop` and issue #10069.
+        let mut reads_external_as_esm = false;
+        let mut note_external_interop = |canonical_ref: SymbolRef| {
+          // Runs for every referenced symbol of every module; the flag is monotonic, so once it is
+          // set there is nothing left to learn.
+          if reads_external_as_esm {
+            return;
+          }
+          let symbol = self.symbols.get(canonical_ref);
+          let namespace_ref = match &symbol.namespace_alias {
+            Some(ns) => self.symbols.canonical_ref_for(ns.namespace_ref),
+            None => canonical_ref,
+          };
+          if self.used_external_symbols.has_interop_use_for(&namespace_ref) {
+            reads_external_as_esm = true;
+          }
+        };
+
         // Symbols from runtime are referenced by bundler not import statements.
         meta.referenced_symbols_by_entry_point_chunk.iter().for_each(
           |(symbol_ref, _came_from_cjs)| {
@@ -29,10 +51,16 @@ impl LinkStage<'_> {
             if let Some(ns) = &symbol.namespace_alias {
               extended_dependencies.insert(ns.namespace_ref.owner);
             }
+            // An entry export can be the *only* live reference to an external — no included
+            // statement mentions it. The recorded interop is bundle-wide, so this chunk still
+            // renders `__toESM(require(...))`; without this edge the helper has no cross-chunk
+            // binding here and finalization panics looking one up.
+            note_external_interop(canonical_ref);
           },
         );
 
         let Module::Normal(_) = &self.module_table[module_idx] else {
+          // External modules are not rendered, so they never need a runtime-helper edge.
           return (module_idx, extended_dependencies, RuntimeHelper::default());
         };
 
@@ -51,6 +79,7 @@ impl LinkStage<'_> {
                   if let Some(ns) = &symbol.namespace_alias {
                     extended_dependencies.insert(ns.namespace_ref.owner);
                   }
+                  note_external_interop(canonical_ref);
                 }
                 rolldown_common::SymbolOrMemberExprRef::MemberExpr(member_expr) => {
                   match member_expr.represent_symbol_ref(&meta.resolved_member_expr_refs) {
@@ -61,6 +90,7 @@ impl LinkStage<'_> {
                       if let Some(ns) = &symbol.namespace_alias {
                         extended_dependencies.insert(ns.namespace_ref.owner);
                       }
+                      note_external_interop(canonical_ref);
                     }
                     _ => {
                       // `None` means the member expression resolve to a ambiguous export, which means it actually resolve to nothing.
@@ -82,7 +112,7 @@ impl LinkStage<'_> {
           let dep_meta = &self.metas[*dep_module_idx];
           dep_meta.depended_runtime_helper.contains(RuntimeHelper::ToEsm)
         });
-        let inherited_runtime = if needs_inherit_to_esm_runtime {
+        let inherited_runtime = if needs_inherit_to_esm_runtime || reads_external_as_esm {
           RuntimeHelper::ToEsm
         } else {
           RuntimeHelper::default()
@@ -118,6 +148,7 @@ impl LinkStage<'_> {
     //
     //
     let tree_shaking = self.options.treeshake.is_some();
+    let strict_execution_order = self.options.is_strict_execution_order_enabled();
     for (module_idx, extended_dependencies, runtime_helper) in processed_module_results {
       // Symbol-derived dependencies always force their owner module to be loaded. Import-record
       // targets (what `meta.dependencies` holds at this point) only do so when evaluating them
@@ -130,24 +161,54 @@ impl LinkStage<'_> {
       // facades onto the chunk holding their exports — e.g. a statically imported re-export
       // barrel that is also a dynamic entry must not push its re-export targets into a separate
       // chunk, see rollup's `entry-without-code-dynamic`).
-      let load_dependencies: FxIndexSet<ModuleIdx> = extended_dependencies
-        .iter()
-        .copied()
-        .chain(self.metas[module_idx].dependencies.iter().copied().filter(|dep_idx| {
-          !tree_shaking
-            || self.entries.contains_key(dep_idx)
-            || self.module_table[*dep_idx].side_effects().has_side_effects()
-        }))
-        .collect();
+      let execution_dependencies = strict_execution_order.then(|| {
+        extended_dependencies
+          .iter()
+          .copied()
+          .chain(self.metas[module_idx].dependencies.iter().copied().filter(|dep_idx| {
+            !tree_shaking || self.module_table[*dep_idx].side_effects().has_side_effects()
+          }))
+          .collect::<FxIndexSet<ModuleIdx>>()
+      });
+      let load_dependencies: FxIndexSet<ModuleIdx> =
+        if let Some(execution_dependencies) = &execution_dependencies {
+          execution_dependencies
+            .iter()
+            .copied()
+            .chain(
+              self.metas[module_idx]
+                .dependencies
+                .iter()
+                .copied()
+                .filter(|dep_idx| self.entries.contains_key(dep_idx)),
+            )
+            .collect()
+        } else {
+          extended_dependencies
+            .iter()
+            .copied()
+            .chain(self.metas[module_idx].dependencies.iter().copied().filter(|dep_idx| {
+              !tree_shaking
+                || self.entries.contains_key(dep_idx)
+                || self.module_table[*dep_idx].side_effects().has_side_effects()
+            }))
+            .collect()
+        };
 
       let meta = &mut self.metas[module_idx];
       meta.dependencies.extend(extended_dependencies);
       meta.load_dependencies = load_dependencies;
+      if let Some(execution_dependencies) = execution_dependencies {
+        meta.execution_dependencies = execution_dependencies;
+      }
       meta.depended_runtime_helper |= runtime_helper;
 
       if !runtime_helper.is_empty() {
         meta.dependencies.insert(self.runtime.id());
         meta.load_dependencies.insert(self.runtime.id());
+        if strict_execution_order {
+          meta.execution_dependencies.insert(self.runtime.id());
+        }
       }
     }
 
@@ -160,6 +221,9 @@ impl LinkStage<'_> {
           for &entry_module_idx in self.entries.keys() {
             self.metas[entry_module_idx].dependencies.insert(runtime_idx);
             self.metas[entry_module_idx].load_dependencies.insert(runtime_idx);
+            if strict_execution_order {
+              self.metas[entry_module_idx].execution_dependencies.insert(runtime_idx);
+            }
             self.metas[entry_module_idx].has_side_effectful_runtime_dep = true;
           }
         }

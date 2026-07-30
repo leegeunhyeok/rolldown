@@ -7,6 +7,8 @@ source: crates/rolldown_testing/src/integration_test.rs
 
 ```js
 // HIDDEN [\0rolldown/runtime.js]
+//#region cjs.cjs
+//#endregion
 //#region lib.js
 var import_cjs = /* @__PURE__ */ __toESM((/* @__PURE__ */ __commonJSMin(((exports, module) => {
 	console.log("cjs");
@@ -36,19 +38,24 @@ var require_cjs = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 //#endregion
 //#region lib.js
 var import_cjs$1, fromLib;
-var init_lib = __esmMin((() => {
-	import_cjs$1 = /* @__PURE__ */ __toESM(require_cjs());
-	fromLib = import_cjs$1.default.value;
-}));
+function init_lib() {
+	return (init_lib = __esmMin((() => {
+		import_cjs$1 = /* @__PURE__ */ __toESM(require_cjs());
+		fromLib = import_cjs$1.default.value;
+	})))();
+}
 //#endregion
 //#region main.js
 var import_cjs;
+function init_main() {
+	return (init_main = __esmMin((() => {
+		init_lib();
+		import_cjs = /* @__PURE__ */ __toESM(require_cjs());
+		console.log("main", fromLib, import_cjs.default.value);
+	})))();
+}
 //#endregion
-__esmMin((() => {
-	init_lib();
-	import_cjs = /* @__PURE__ */ __toESM(require_cjs());
-	console.log("main", fromLib, import_cjs.default.value);
-}))();
+init_main();
 
 ```
 
@@ -66,16 +73,12 @@ var require_cjs = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	module.exports = { value: 1 };
 }));
 //#endregion
-var import_cjs$1, fromLib, import_cjs;
-__esmMin((() => {
-	//#region lib.js
-	import_cjs$1 = /* @__PURE__ */ __toESM(require_cjs());
-	fromLib = import_cjs$1.default.value;
-	//#endregion
-	//#region main.js
-	import_cjs = /* @__PURE__ */ __toESM(require_cjs());
-	console.log("main", fromLib, import_cjs.default.value);
-	//#endregion
-}))();
+//#region lib.js
+const fromLib = (/* @__PURE__ */ __toESM(require_cjs())).default.value;
+//#endregion
+//#region main.js
+var import_cjs = /* @__PURE__ */ __toESM(require_cjs());
+console.log("main", fromLib, import_cjs.default.value);
+//#endregion
 
 ```

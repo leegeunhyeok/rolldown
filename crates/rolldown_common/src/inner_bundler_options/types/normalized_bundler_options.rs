@@ -226,6 +226,20 @@ impl NormalizedBundlerOptions {
     self.strict_execution_order
   }
 
+  /// Strict execution order with on-demand wrapping — the selective mode that derives its wrapping
+  /// plan from the execution-order analysis instead of deferring every eligible module.
+  pub fn is_strict_on_demand_wrapping_enabled(&self) -> bool {
+    self.strict_execution_order && self.experimental.is_on_demand_wrapping_enabled()
+  }
+
+  pub fn has_manual_code_splitting_groups(&self) -> bool {
+    self
+      .manual_code_splitting
+      .as_ref()
+      .and_then(|options| options.groups.as_ref())
+      .is_some_and(|groups| !groups.is_empty())
+  }
+
   /// make sure the `polyfill_require` is only valid for `esm` format with `node` platform
   #[inline]
   pub fn polyfill_require_for_esm_format_with_node_platform(&self) -> bool {
@@ -241,7 +255,7 @@ impl NormalizedBundlerOptions {
   ) -> anyhow::Result<FilenameTemplate> {
     Ok(FilenameTemplate::new(
       self.asset_filenames.call(rollup_pre_rendered_asset).await?,
-      "assetFileNames",
+      "output.assetFileNames",
     ))
   }
 
@@ -262,7 +276,7 @@ impl NormalizedBundlerOptions {
         .map_or(vec![], |original_file_name| vec![original_file_name.into()]),
     };
     let asset_filename = self.asset_filenames.call(&rollup_pre_rendered_asset).await?;
-    Ok(Some(FilenameTemplate::new(asset_filename, "assetFileNames")))
+    Ok(Some(FilenameTemplate::new(asset_filename, "output.assetFileNames")))
   }
 
   pub async fn sanitize_file_name_with_file(

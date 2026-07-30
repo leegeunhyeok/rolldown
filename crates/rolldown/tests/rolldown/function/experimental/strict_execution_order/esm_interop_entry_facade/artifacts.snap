@@ -6,13 +6,11 @@ source: crates/rolldown_testing/src/integration_test.rs
 ## a.js
 
 ```js
-import { n as __esmMin } from "./rolldown-runtime.js";
-import { n as init_e } from "./e.js";
+import { n as init_e } from "./e2.js";
+//#region a.js
+init_e();
+console.log("A");
 //#endregion
-__esmMin((() => {
-	init_e();
-	console.log("A");
-}))();
 
 ```
 
@@ -20,7 +18,7 @@ __esmMin((() => {
 
 ```js
 import { t as __commonJSMin } from "./rolldown-runtime.js";
-import { n as init_e } from "./e.js";
+import { n as init_e } from "./e2.js";
 //#region b.cjs
 var require_b = /* @__PURE__ */ __commonJSMin((() => {
 	init_e();
@@ -34,6 +32,15 @@ export default require_b();
 ## e.js
 
 ```js
+import { n as init_e, r as v } from "./e2.js";
+init_e();
+export { v };
+
+```
+
+## e2.js
+
+```js
 import { n as __esmMin, r as __exportAll } from "./rolldown-runtime.js";
 //#region e.js
 var e_exports = /* @__PURE__ */ __exportAll({ v: () => "v" });
@@ -43,8 +50,7 @@ var init_e = __esmMin((() => {
 	console.log("E");
 }));
 //#endregion
-init_e();
-export { init_e as n, e_exports as t, v };
+export { init_e as n, v as r, e_exports as t };
 
 ```
 
@@ -64,12 +70,16 @@ export { __esmMin as n, __exportAll as r, __commonJSMin as t };
 
 ```js
 import { n as __esmMin } from "./rolldown-runtime.js";
-import { n as init_e } from "./e.js";
+import { n as init_e } from "./e2.js";
+//#region a.js
+function init_a() {
+	return (init_a = __esmMin((() => {
+		init_e();
+		console.log("A");
+	})))();
+}
 //#endregion
-__esmMin((() => {
-	init_e();
-	console.log("A");
-}))();
+init_a();
 
 ```
 
@@ -77,7 +87,7 @@ __esmMin((() => {
 
 ```js
 import { t as __commonJSMin } from "./rolldown-runtime.js";
-import { n as init_e } from "./e.js";
+import { n as init_e } from "./e2.js";
 //#region b.cjs
 var require_b = /* @__PURE__ */ __commonJSMin((() => {
 	init_e();
@@ -91,6 +101,15 @@ export default require_b();
 ### e.js
 
 ```js
+import { n as init_e, r as v } from "./e2.js";
+init_e();
+export { v };
+
+```
+
+### e2.js
+
+```js
 import { n as __esmMin, r as __exportAll } from "./rolldown-runtime.js";
 //#region e.js
 var e_exports = /* @__PURE__ */ __exportAll({ v: () => "v" });
@@ -100,8 +119,7 @@ var init_e = __esmMin((() => {
 	console.log("E");
 }));
 //#endregion
-init_e();
-export { init_e as n, e_exports as t, v };
+export { init_e as n, v as r, e_exports as t };
 
 ```
 

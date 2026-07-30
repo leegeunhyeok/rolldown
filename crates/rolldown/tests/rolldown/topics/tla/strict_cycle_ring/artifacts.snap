@@ -9,6 +9,8 @@ source: crates/rolldown_testing/src/integration_test.rs
 //#region ring-b.js
 globalThis.__ringB = "b";
 //#endregion
+//#region ring-a.js
+//#endregion
 //#region main.js
 const value = await Promise.resolve("a");
 //#endregion
@@ -25,25 +27,32 @@ export { value };
 ```js
 // HIDDEN [\0rolldown/runtime.js]
 //#region ring-b.js
-var init_ring_b = __esmMin((async () => {
-	await init_ring_a();
-	globalThis.__ringB = "b";
-}));
+function init_ring_b() {
+	return (init_ring_b = __esmMin((async () => {
+		await init_ring_a();
+		globalThis.__ringB = "b";
+	})))();
+}
 //#endregion
 //#region ring-a.js
 var a;
-var init_ring_a = __esmMin((async () => {
-	await init_ring_b();
-	a = await Promise.resolve("a");
-}));
+function init_ring_a() {
+	return (init_ring_a = __esmMin((async () => {
+		await init_ring_b();
+		a = await Promise.resolve("a");
+	})))();
+}
 //#endregion
 //#region main.js
 var value;
+function init_main() {
+	return (init_main = __esmMin((async () => {
+		await init_ring_a();
+		value = a;
+	})))();
+}
 //#endregion
-await __esmMin((async () => {
-	await init_ring_a();
-	value = a;
-}))();
+await init_main();
 export { value };
 
 ```
@@ -55,19 +64,14 @@ export { value };
 ### main.js
 
 ```js
-// HIDDEN [\0rolldown/runtime.js]
-var a, value;
-await __esmMin((async () => {
-	//#region ring-b.js
-	globalThis.__ringB = "b";
-	//#endregion
-	//#region ring-a.js
-	a = await Promise.resolve("a");
-	//#endregion
-	//#region main.js
-	value = a;
-	//#endregion
-}))();
+//#region ring-b.js
+globalThis.__ringB = "b";
+//#endregion
+//#region ring-a.js
+//#endregion
+//#region main.js
+const value = await Promise.resolve("a");
+//#endregion
 export { value };
 
 ```

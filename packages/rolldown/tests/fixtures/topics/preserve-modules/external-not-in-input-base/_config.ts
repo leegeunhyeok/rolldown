@@ -1,5 +1,5 @@
 import { defineTest } from 'rolldown-tests';
-import type { Plugin } from 'rolldown';
+import type { Plugin } from '@rollipop/rolldown';
 import { expect } from 'vitest';
 
 // Companion to ../issue-10186: a rooted id (`/favicon`) that a plugin marks

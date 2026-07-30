@@ -42,15 +42,18 @@ export { shared as t };
 ### a.js
 
 ```js
-import { t as __esmMin } from "./rolldown-runtime.js";
 import { n as shared, t as init_shared } from "./shared.js";
+import { t as __esmMin } from "./rolldown-runtime.js";
 //#region a.js
 var a;
+function init_a() {
+	return (init_a = __esmMin((async () => {
+		await init_shared();
+		a = `a:${shared}`;
+	})))();
+}
 //#endregion
-await __esmMin((async () => {
-	await init_shared();
-	a = `a:${shared}`;
-}))();
+await init_a();
 export { a };
 
 ```
@@ -58,15 +61,18 @@ export { a };
 ### b.js
 
 ```js
-import { t as __esmMin } from "./rolldown-runtime.js";
 import { n as shared, t as init_shared } from "./shared.js";
+import { t as __esmMin } from "./rolldown-runtime.js";
 //#region b.js
 var b;
+function init_b() {
+	return (init_b = __esmMin((async () => {
+		await init_shared();
+		b = `b:${shared}`;
+	})))();
+}
 //#endregion
-await __esmMin((async () => {
-	await init_shared();
-	b = `b:${shared}`;
-}))();
+await init_b();
 export { b };
 
 ```
@@ -85,9 +91,11 @@ export { __esmMin as t };
 import { t as __esmMin } from "./rolldown-runtime.js";
 //#region shared.js
 var shared;
-var init_shared = __esmMin((async () => {
-	shared = await Promise.resolve("shared");
-}));
+function init_shared() {
+	return (init_shared = __esmMin((async () => {
+		shared = await Promise.resolve("shared");
+	})))();
+}
 //#endregion
 export { shared as n, init_shared as t };
 
@@ -100,15 +108,10 @@ export { shared as n, init_shared as t };
 ### a.js
 
 ```js
-import { t as __esmMin } from "./rolldown-runtime.js";
-import { n as shared, t as init_shared } from "./shared.js";
+import { t as shared } from "./shared.js";
 //#region a.js
-var a;
+const a = `a:${shared}`;
 //#endregion
-await __esmMin((async () => {
-	await init_shared();
-	a = `a:${shared}`;
-}))();
 export { a };
 
 ```
@@ -116,37 +119,20 @@ export { a };
 ### b.js
 
 ```js
-import { t as __esmMin } from "./rolldown-runtime.js";
-import { n as shared, t as init_shared } from "./shared.js";
+import { t as shared } from "./shared.js";
 //#region b.js
-var b;
+const b = `b:${shared}`;
 //#endregion
-await __esmMin((async () => {
-	await init_shared();
-	b = `b:${shared}`;
-}))();
 export { b };
-
-```
-
-### rolldown-runtime.js
-
-```js
-// HIDDEN [\0rolldown/runtime.js]
-export { __esmMin as t };
 
 ```
 
 ### shared.js
 
 ```js
-import { t as __esmMin } from "./rolldown-runtime.js";
 //#region shared.js
-var shared;
-var init_shared = __esmMin((async () => {
-	shared = await Promise.resolve("shared");
-}));
+const shared = await Promise.resolve("shared");
 //#endregion
-export { shared as n, init_shared as t };
+export { shared as t };
 
 ```

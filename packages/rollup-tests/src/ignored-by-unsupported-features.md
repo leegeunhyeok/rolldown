@@ -24,14 +24,11 @@
  - rollup@function@enforce-sequential-plugin-order: allows to enforce sequential plugin hook order for parallel plugin hooks
  - rollup@hooks@allows to enforce sequential plugin hook order in watch mode
 
-### The `renderDynamicImport/resolveFileUrl/resolveImportMeta/shouldTransformCachedModule` hooks not supported
+### The `renderDynamicImport/resolveImportMeta/shouldTransformCachedModule` hooks not supported
  - rollup@function@enforce-plugin-order: allows to enforce plugin hook order
  
 ### The `renderDynamicImport` hook not supported
  - rollup@form@custom-dynamic-import-no-interop: does not add any interop when using a custom dynamic import handler@generates es
-
-### The `resolveFileUrl` hook not supported
- - rollup@form@configure-file-url: allows to configure file urls@generates es
 
 ### The `PluginContext.parse` does not support `allowReturnOutsideFunction` option
  - rollup@function@parse-return-outside-function: supports parsing return statements outside functions via options
@@ -302,6 +299,9 @@
  - rollup@form@import-attributes@keeps-static-attributes-key-default: keeps any import attributes on input using import attributes with "with" key@generates es
  - rollup@form@import-attributes@keeps-static-attributes-key-with: keeps any import attributes on input using import attributes with "with" key@generates es
  - rollup@form@resolve-file-url-import-meta-attributes: adds attributes to file resolveFileUrl and resolveImportMeta hooks@generates es
+ - rollup@form@configure-file-url: allows to configure file urls@generates es
+ - rollup@chunking form@resolve-file-url: allows to configure file urls@generates es
+ - rollup@chunking form@resolve-file-url: allows to configure file urls@generates cjs
  - rollup@function@deprecated@load-attributes: does not allow returning attributes from the "load" hook
  - rollup@function@deprecated@transform-attributes: does not allow returning attributes from the "transform" hook
  - rollup@function@extend-more-hooks-to-include-import-attributes: extend load, transform and renderDynamicImport to include import attributes
@@ -408,8 +408,6 @@
  - rollup@function@hashing@minimum-hash-size: throws when the maximum hash size is exceeded (`VALIDATION_ERROR` error)
  - rollup@function@hashing@length-at-non-hash: throws when configuring a length for placeholder other than "hash" (`VALIDATION_ERROR` error)
  - rollup@function@emit-file@invalid-file-type: throws for invalid file types (`pluginCode":"VALIDATION_ERROR"` expected, but got `pluginCode:"InvalidArg"`)
- - rollup@function@emit-file@invalid-asset-name3: throws for invalid asset names with absolute path on Windows OS (`PLUGIN_ERROR`>`VALIDATION_ERROR` error)
- - rollup@function@emit-file@invalid-asset-name: throws for invalid asset names (`PLUGIN_ERROR`>`VALIDATION_ERROR` error)
  - rollup@function@emit-file@emit-same-file: warns if multiple files with the same name are emitted (`FILE_NAME_CONFLICT` error)
  - rollup@function@emit-file@emit-from-output-options: throws when trying to emit files from the outputOptions hook (`CANNOT_EMIT_FROM_OPTIONS_HOOK` error)
  - rollup@function@conflicting-reexports@namespace-import: warns when a conflicting binding is imported via a namespace import (`MISSING_EXPORT` warning)

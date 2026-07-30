@@ -38,21 +38,26 @@
     },
     "packages/rolldown": {
       "entry": [
-        "src/browser.js",
         "src/cli/index.ts",
         "src/log/locate-character/index.d.ts",
-        "src/rolldown-binding.wasi-browser.js",
         "src/{wasi,webcontainer}-*.*",
         "src/api/experimental.ts",
       ],
-      "ignore": ["src/binding.cjs", "src/rolldown-binding.wasi.cjs", "src/browser.js"],
-      "ignoreDependencies": ["@rollup/plugin-json", "buble", "pathe"],
+      "ignore": ["src/binding.cjs"],
+      "ignoreDependencies": [
+        "@emnapi/core",
+        "@napi-rs/wasm-runtime",
+        "@rollup/plugin-json",
+        "buble",
+        "pathe",
+      ],
     },
     "packages/rolldown/tests": {
       "entry": ["*/**"],
       "ignore": ["{cli,fixtures,stability}/**"], // lots of unlisted dependencies
       "ignoreUnresolved": ["./world"],
       "ignoreDependencies": [
+        "@rolldown/test-dual-format", // used in packages/rolldown/tests/builtin-plugin/vite-resolve.test.ts
         "@rolldown/test-side-effects-field", // used in packages/rolldown/tests/fixtures/plugin/context/resolve-side-effects
         "direct-graph-lib", // fixture dependency in packages/rolldown/tests/behaviors/emit-debug-data
         "duplicate-a", // fixture dependency in packages/rolldown/tests/behaviors/emit-debug-data
@@ -64,12 +69,19 @@
     "packages/rollup-tests": {
       "entry": ["src/**/*.js", "test/**/*.{js,ts}"],
       "ignoreDependencies": [
+        "@jridgewell/sourcemap-codec",
+        "@rollup/plugin-commonjs",
+        "@rollup/plugin-json",
+        "@rollup/plugin-node-resolve",
         "acorn-import-assertions",
         "acorn-import-phases",
-        "locate-character",
-        "requirejs",
+        "acorn-jsx",
+        "buble",
+        "magic-string",
         "terser",
+        "requirejs",
         "weak-napi",
+        "locate-character",
       ],
       "ignoreUnresolved": ["/types$"],
     },

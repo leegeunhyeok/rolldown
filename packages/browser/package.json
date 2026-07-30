@@ -23,14 +23,20 @@
   "files": [
     "bin",
     "dist",
+    "LICENSE",
+    "THIRD-PARTY-LICENSE",
     "!*/.tsbuildinfo"
   ],
   "type": "module",
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
+  "imports": {
+    "#default-runtime": "./dist/experimental-default-runtime.mjs"
+  },
   "exports": {
     ".": {
+      "types": "./dist/index.d.mts",
       "browser": "./dist/index.browser.mjs",
       "default": "./dist/index.mjs"
     },
@@ -41,6 +47,10 @@
     },
     "./experimental/runtime-types": {
       "types": "./dist/experimental-runtime-types.d.ts"
+    },
+    "./experimental/runtime": {
+      "types": "./dist/experimental-runtime.d.ts",
+      "default": "./dist/experimental-runtime.mjs"
     },
     "./plugins": {
       "browser": "./dist/plugins-index.browser.mjs",
@@ -66,8 +76,8 @@
     "publint": "publint ."
   },
   "dependencies": {
-    "@emnapi/core": "1.11.2",
-    "@emnapi/runtime": "1.11.2",
+    "@emnapi/core": "catalog:",
+    "@emnapi/runtime": "catalog:",
     "@napi-rs/wasm-runtime": "catalog:"
   }
 }

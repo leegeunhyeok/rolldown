@@ -1,9 +1,8 @@
 use oxc::{
-  allocator::{Box as ArenaBox, TakeIn},
+  allocator::{Allocator, Box as ArenaBox, GetAllocator, TakeIn},
   ast::{
-    NONE,
     ast::{self, ExportDefaultDeclarationKind, Expression, ObjectPropertyKind, Statement},
-    builder::GetAstBuilder,
+    builder::{AstBuilder, GetAstBuilder, NONE},
   },
   semantic::{IsGlobalReference, Scoping, SymbolId},
   span::{GetSpanMut, SPAN, Span},
@@ -14,9 +13,13 @@ use rolldown_common::{
   NormalModule, Specifier, StmtInfoIdx, StmtInfos, SymbolRef, SymbolRefDb,
 };
 use rolldown_ecmascript::CJS_REQUIRE_REF_STR;
-use rolldown_ecmascript_utils::{AstFactory, ExpressionExt};
+use rolldown_ecmascript_utils::{
+  BindingIdentifierFactoryExt, ExpressionExt, ExpressionFactoryExt, IdentifierNameFactoryExt,
+  ObjectPropertyKindFactoryExt, StatementFactoryExt,
+};
 use rolldown_utils::ecmascript::is_validate_identifier_name;
 use rustc_hash::{FxHashMap, FxHashSet};
+use std::ops::Deref;
 
 use crate::{
   SharedOptions,
@@ -37,6 +40,102 @@ const FACTORY_PARAM_NAMES: [&str; 5] = [
   HMR_RUNTIME_NAME,
 ];
 
+struct AstFactory<'ast> {
+  ast_builder: AstBuilder<'ast>,
+}
+
+impl<'ast> AstFactory<'ast> {
+  fn make_id_ref_expr(&self, span: Span, name: &str) -> Expression<'ast> {
+    Expression::new_id_ref_expr(span, name, self)
+  }
+
+  fn make_member_access_expr(&self, object: &str, property: &str) -> Expression<'ast> {
+    Expression::new_member_access_expr(object, property, self)
+  }
+
+  fn make_call_with_arg(
+    &self,
+    callee: Expression<'ast>,
+    arg: Expression<'ast>,
+    pure: bool,
+  ) -> Expression<'ast> {
+    Expression::new_call_with_arg(callee, arg, pure, self)
+  }
+
+  fn make_to_esm_call_with_interop(
+    &self,
+    to_esm_fn_name: &str,
+    call_expr: Expression<'ast>,
+    interop: Option<Interop>,
+  ) -> Expression<'ast> {
+    Expression::new_to_esm_call_with_interop(to_esm_fn_name, call_expr, interop, self)
+  }
+
+  fn make_member_expr_or_ident_ref(
+    &self,
+    object: Expression<'ast>,
+    props: &[rolldown_common::MemberExprProp],
+    span: Span,
+  ) -> Expression<'ast> {
+    Expression::new_member_expr_or_ident_ref(object, props, span, self)
+  }
+
+  fn make_member_expr_with_void_zero_object(
+    &self,
+    props: &[rolldown_common::MemberExprProp],
+    span: Span,
+  ) -> Expression<'ast> {
+    Expression::new_member_expr_with_void_zero_object(props, span, self)
+  }
+
+  fn make_promise_resolve_then(&self, expr: Expression<'ast>) -> Expression<'ast> {
+    Expression::new_promise_resolve_then(expr, self)
+  }
+
+  fn make_id(&self, span: Span, name: &str) -> ast::BindingIdentifier<'ast> {
+    ast::BindingIdentifier::new_id(span, name, self)
+  }
+
+  fn make_id_name(&self, span: Span, name: &str) -> ast::IdentifierName<'ast> {
+    ast::IdentifierName::new_id_name(span, name, self)
+  }
+
+  fn make_lazy_export_property(
+    &self,
+    key: &str,
+    expr: Expression<'ast>,
+    computed: bool,
+  ) -> ObjectPropertyKind<'ast> {
+    ObjectPropertyKind::new_lazy_export_property(key, expr, computed, self)
+  }
+
+  fn make_var_decl(&self, name: &str, init: Expression<'ast>) -> Statement<'ast> {
+    Statement::new_var_decl(name, init, self)
+  }
+}
+
+impl<'ast> GetAstBuilder<'ast> for AstFactory<'ast> {
+  type Builder = AstBuilder<'ast>;
+
+  fn builder(&self) -> &AstBuilder<'ast> {
+    &self.ast_builder
+  }
+}
+
+impl<'ast> GetAllocator<'ast> for AstFactory<'ast> {
+  fn allocator(&self) -> &'ast Allocator {
+    self.ast_builder.allocator()
+  }
+}
+
+impl Deref for AstFactory<'_> {
+  type Target = Allocator;
+
+  fn deref(&self) -> &Allocator {
+    self.ast_builder.allocator()
+  }
+}
+
 #[derive(Clone, Copy)]
 pub enum RollipopRuntimeIdMode {
   Numeric,
@@ -52,7 +151,7 @@ pub struct RollipopAstFinalizerContext<'me> {
 }
 
 pub struct RollipopAstFinalizer<'me, 'ast> {
-  pub ast_factory: AstFactory<'ast>,
+  ast_factory: AstFactory<'ast>,
   pub ctx: RollipopAstFinalizerContext<'me>,
   pub runtime_id_mode: RollipopRuntimeIdMode,
 
@@ -68,7 +167,7 @@ pub struct RollipopAstFinalizer<'me, 'ast> {
 }
 
 impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
-  pub fn new(ast_factory: AstFactory<'ast>, ctx: RollipopAstFinalizerContext<'me>) -> Self {
+  pub fn new(ast_builder: AstBuilder<'ast>, ctx: RollipopAstFinalizerContext<'me>) -> Self {
     let runtime_id_mode = if ctx.options.profiler_names {
       RollipopRuntimeIdMode::StableId
     } else {
@@ -76,6 +175,8 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
     };
     let is_dev_mode = ctx.options.is_dev_mode_enabled();
     let is_runtime_module = ctx.link_output.runtime.id() == ctx.module.idx;
+    let exports = oxc::allocator::Vec::new_in(&ast_builder);
+    let ast_factory = AstFactory { ast_builder };
     Self {
       ast_factory,
       ctx,
@@ -83,7 +184,7 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
       import_bindings: FxHashMap::default(),
       generated_static_import_infos: FxHashMap::default(),
       generated_imports: FxHashSet::default(),
-      exports: oxc::allocator::Vec::new_in(&ast_factory),
+      exports,
       named_exports: FxHashMap::default(),
       uses_import_meta_hot: false,
       is_dev_mode,
@@ -293,7 +394,7 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
       }
     };
     let mut expr = make_import_access_expr_for_object(
-      self.ast_factory,
+      &self.ast_factory,
       self.to_esm_expr(require_expr, interop),
       &imported,
     );
@@ -531,7 +632,7 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
                 }
                 props.push(self.ast_factory.make_lazy_export_property(
                   &exported,
-                  import_binding.to_expression(self.ast_factory),
+                  import_binding.to_expression(&self.ast_factory),
                   !is_validate_identifier_name(&exported),
                 ));
               }
@@ -728,7 +829,7 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
     for (exported, named_export) in &self.named_exports {
       let expr = if let Some(import_binding) = self.import_bindings.get(&named_export.local_binding)
       {
-        import_binding.to_expression(self.ast_factory)
+        import_binding.to_expression(&self.ast_factory)
       } else {
         let name = scoping.symbol_name(named_export.local_binding);
         let name = self.local_binding_name(named_export.local_binding, name);
@@ -896,8 +997,8 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
 }
 
 impl<'me, 'ast> HmrAstBuilder<'me, 'ast> for RollipopAstFinalizer<'me, 'ast> {
-  fn builder(&self) -> oxc::ast::AstBuilder<'ast> {
-    *self.ast_factory.builder()
+  fn builder(&self) -> AstBuilder<'ast> {
+    AstBuilder::new(self.ast_factory.allocator())
   }
 
   fn module(&self) -> &NormalModule {
@@ -992,7 +1093,7 @@ impl<'ast> Traverse<'ast, ()> for RollipopAstFinalizer<'_, 'ast> {
       && let Some(symbol_id) = ctx.scoping().get_reference(reference_id).symbol_id()
       && let Some(import_binding) = self.import_bindings.get(&symbol_id)
     {
-      *node = import_binding.to_expression(self.ast_factory);
+      *node = import_binding.to_expression(&self.ast_factory);
       return;
     }
 
@@ -1042,13 +1143,13 @@ struct ImportBinding {
 }
 
 impl ImportBinding {
-  fn to_expression<'ast>(&self, ast_factory: AstFactory<'ast>) -> Expression<'ast> {
+  fn to_expression<'ast>(&self, ast_factory: &AstFactory<'ast>) -> Expression<'ast> {
     make_import_access_expr(ast_factory, &self.binding_name, &self.imported)
   }
 }
 
 fn make_import_access_expr<'ast>(
-  ast_factory: AstFactory<'ast>,
+  ast_factory: &AstFactory<'ast>,
   binding_name: &str,
   imported: &Specifier,
 ) -> Expression<'ast> {
@@ -1060,7 +1161,7 @@ fn make_import_access_expr<'ast>(
 }
 
 fn make_import_access_expr_for_object<'ast>(
-  ast_factory: AstFactory<'ast>,
+  ast_factory: &AstFactory<'ast>,
   object: Expression<'ast>,
   imported: &Specifier,
 ) -> Expression<'ast> {
@@ -1072,7 +1173,7 @@ fn make_import_access_expr_for_object<'ast>(
         object,
         ast_factory.make_id_name(SPAN, name.as_str()),
         false,
-        &ast_factory,
+        ast_factory,
       ))
     }
     Specifier::Literal(name) => {
@@ -1081,12 +1182,12 @@ fn make_import_access_expr_for_object<'ast>(
         object,
         Expression::new_string_literal(
           SPAN,
-          ast::Str::from_str_in(name.as_str(), &ast_factory),
+          ast::Str::from_str_in(name.as_str(), ast_factory),
           None,
-          &ast_factory,
+          ast_factory,
         ),
         false,
-        &ast_factory,
+        ast_factory,
       ))
     }
   }

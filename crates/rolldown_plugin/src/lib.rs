@@ -23,9 +23,9 @@ pub mod __inner {
 pub use crate::{
   generated::hook_usage::HookUsage,
   plugin::{
-    HookAugmentChunkHashReturn, HookInjectionOutputReturn, HookLoadReturn, HookNoopReturn,
-    HookRenderChunkReturn, HookResolveIdReturn, HookTransformAstReturn, HookTransformReturn,
-    Plugin,
+    HookAugmentChunkHashReturn, HookHotUpdateReturn, HookInjectionOutputReturn, HookLoadReturn,
+    HookNoopReturn, HookRenderChunkReturn, HookResolveFileUrlReturn, HookResolveIdReturn,
+    HookTransformAstReturn, HookTransformReturn, Plugin,
   },
   plugin_context::{
     LoadPluginContext, PluginContext, SharedLoadPluginContext, SharedNativePluginContext,
@@ -39,12 +39,15 @@ pub use crate::{
   types::hook_build_start_args::HookBuildStartArgs,
   types::hook_close_bundle_args::HookCloseBundleArgs,
   types::hook_generate_bundle_args::HookGenerateBundleArgs,
+  types::hook_hot_update_args::HookHotUpdateArgs,
   types::hook_load_args::HookLoadArgs,
   types::hook_load_output::HookLoadOutput,
   types::hook_render_chunk_args::HookRenderChunkArgs,
   types::hook_render_chunk_output::HookRenderChunkOutput,
   types::hook_render_error::HookRenderErrorArgs,
   types::hook_render_start_args::HookRenderStartArgs,
+  types::hook_resolve_file_url_args::HookResolveFileUrlArgs,
+  types::hook_resolve_file_url_output::HookResolveFileUrlOutput,
   types::hook_resolve_id_args::HookResolveIdArgs,
   types::hook_resolve_id_output::HookResolveIdOutput,
   types::hook_timing::HookTimingCollector,

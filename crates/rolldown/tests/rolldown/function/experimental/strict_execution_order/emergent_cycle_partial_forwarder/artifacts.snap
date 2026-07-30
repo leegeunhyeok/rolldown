@@ -6,12 +6,9 @@ source: crates/rolldown_testing/src/integration_test.rs
 ## a.js
 
 ```js
-import { n as __esmMin, t as __commonJSMin } from "./rolldown-runtime.js";
-import { r as init_definer } from "./b.js";
+import { t as __commonJSMin } from "./rolldown-runtime.js";
 //#region a/a-first.js
-var init_a_first = __esmMin((() => {
-	(globalThis.__events ??= []).push("a-first");
-}));
+(globalThis.__events ??= []).push("a-first");
 //#endregion
 //#region a/carrier.cjs.js
 var require_carrier_cjs = /* @__PURE__ */ __commonJSMin(((exports, module) => {
@@ -24,11 +21,8 @@ var require_carrier_cjs = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 function marker() {
 	return "F";
 }
-var init_forwarder = __esmMin((() => {
-	init_definer();
-}));
 //#endregion
-export { init_a_first as i, marker as n, require_carrier_cjs as r, init_forwarder as t };
+export { require_carrier_cjs as n, marker as t };
 
 ```
 
@@ -36,33 +30,34 @@ export { init_a_first as i, marker as n, require_carrier_cjs as r, init_forwarde
 
 ```js
 import { n as __esmMin, r as __toESM } from "./rolldown-runtime.js";
-import { r as require_carrier_cjs } from "./a.js";
+import { n as require_carrier_cjs } from "./a.js";
 //#region b/eagerhaz.js
-var import_carrier_cjs;
-var init_eagerhaz = __esmMin((() => {
-	import_carrier_cjs = /* @__PURE__ */ __toESM(require_carrier_cjs());
-	globalThis.__carried = (0, import_carrier_cjs.default)();
-}));
+var import_carrier_cjs = /* @__PURE__ */ __toESM(require_carrier_cjs());
+globalThis.__carried = (0, import_carrier_cjs.default)();
 //#endregion
 //#region b/definer.js
 function makePv() {
 	return "PV";
 }
 var pv;
-var init_definer = __esmMin((() => {
-	pv = /* @__PURE__ */ makePv();
-}));
+function init_definer() {
+	return (init_definer = __esmMin((() => {
+		pv = /* @__PURE__ */ makePv();
+	})))();
+}
 //#endregion
 //#region b/definer_b.js
 function makeBv() {
 	return "BV";
 }
 var bv;
-var init_definer_b = __esmMin((() => {
-	bv = /* @__PURE__ */ makeBv();
-}));
+function init_definer_b() {
+	return (init_definer_b = __esmMin((() => {
+		bv = /* @__PURE__ */ makeBv();
+	})))();
+}
 //#endregion
-export { init_eagerhaz as a, pv as i, init_definer_b as n, init_definer as r, bv as t };
+export { pv as i, init_definer_b as n, init_definer as r, bv as t };
 
 ```
 
@@ -70,25 +65,26 @@ export { init_eagerhaz as a, pv as i, init_definer_b as n, init_definer as r, bv
 
 ```js
 import { n as __esmMin } from "./rolldown-runtime.js";
-import { i as init_a_first, n as marker, t as init_forwarder } from "./a.js";
-import { a as init_eagerhaz, i as pv, n as init_definer_b, t as bv } from "./b.js";
-__esmMin((() => {
-	//#region e-first.js
-	(globalThis.__events ??= []).push("e-first");
-	//#endregion
-	//#region main.js
-	init_a_first();
-	init_eagerhaz();
-	init_forwarder();
-	init_definer_b();
-	globalThis.__result = {
-		pv,
-		bv,
-		marker: marker(),
-		carried: globalThis.__carried
-	};
-	//#endregion
-}))();
+import { t as marker } from "./a.js";
+import { i as pv, n as init_definer_b, r as init_definer, t as bv } from "./b.js";
+//#region e-first.js
+(globalThis.__events ??= []).push("e-first");
+//#endregion
+//#region main.js
+function init_main() {
+	return (init_main = __esmMin((() => {
+		init_definer();
+		init_definer_b();
+		globalThis.__result = {
+			pv,
+			bv,
+			marker: marker(),
+			carried: globalThis.__carried
+		};
+	})))();
+}
+//#endregion
+init_main();
 
 ```
 
@@ -110,9 +106,11 @@ export { __esmMin as n, __toESM as r, __commonJSMin as t };
 import { n as __esmMin, t as __commonJSMin } from "./rolldown-runtime.js";
 import { r as init_definer } from "./b.js";
 //#region a/a-first.js
-var init_a_first = __esmMin((() => {
-	(globalThis.__events ??= []).push("a-first");
-}));
+function init_a_first() {
+	return (init_a_first = __esmMin((() => {
+		(globalThis.__events ??= []).push("a-first");
+	})))();
+}
 //#endregion
 //#region a/carrier.cjs.js
 var require_carrier_cjs = /* @__PURE__ */ __commonJSMin(((exports, module) => {
@@ -125,9 +123,11 @@ var require_carrier_cjs = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 function marker() {
 	return "F";
 }
-var init_forwarder = __esmMin((() => {
-	init_definer();
-}));
+function init_forwarder() {
+	return (init_forwarder = __esmMin((() => {
+		init_definer();
+	})))();
+}
 //#endregion
 export { init_a_first as i, marker as n, require_carrier_cjs as r, init_forwarder as t };
 
@@ -140,28 +140,34 @@ import { n as __esmMin, r as __toESM } from "./rolldown-runtime.js";
 import { r as require_carrier_cjs } from "./a.js";
 //#region b/eagerhaz.js
 var import_carrier_cjs;
-var init_eagerhaz = __esmMin((() => {
-	import_carrier_cjs = /* @__PURE__ */ __toESM(require_carrier_cjs());
-	globalThis.__carried = (0, import_carrier_cjs.default)();
-}));
+function init_eagerhaz() {
+	return (init_eagerhaz = __esmMin((() => {
+		import_carrier_cjs = /* @__PURE__ */ __toESM(require_carrier_cjs());
+		globalThis.__carried = (0, import_carrier_cjs.default)();
+	})))();
+}
 //#endregion
 //#region b/definer.js
 function makePv() {
 	return "PV";
 }
 var pv;
-var init_definer = __esmMin((() => {
-	pv = /* @__PURE__ */ makePv();
-}));
+function init_definer() {
+	return (init_definer = __esmMin((() => {
+		pv = /* @__PURE__ */ makePv();
+	})))();
+}
 //#endregion
 //#region b/definer_b.js
 function makeBv() {
 	return "BV";
 }
 var bv;
-var init_definer_b = __esmMin((() => {
-	bv = /* @__PURE__ */ makeBv();
-}));
+function init_definer_b() {
+	return (init_definer_b = __esmMin((() => {
+		bv = /* @__PURE__ */ makeBv();
+	})))();
+}
 //#endregion
 export { init_eagerhaz as a, pv as i, init_definer_b as n, init_definer as r, bv as t };
 
@@ -171,26 +177,33 @@ export { init_eagerhaz as a, pv as i, init_definer_b as n, init_definer as r, bv
 
 ```js
 import { n as __esmMin } from "./rolldown-runtime.js";
-import { i as init_a_first, n as marker, t as init_forwarder } from "./a.js";
-import { a as init_eagerhaz, i as pv, n as init_definer_b, t as bv } from "./b.js";
+import { i as init_a_first, n as marker } from "./a.js";
+import { a as init_eagerhaz, i as pv, n as init_definer_b, r as init_definer, t as bv } from "./b.js";
 //#region e-first.js
-var init_e_first = __esmMin((() => {
-	(globalThis.__events ??= []).push("e-first");
-}));
+function init_e_first() {
+	return (init_e_first = __esmMin((() => {
+		(globalThis.__events ??= []).push("e-first");
+	})))();
+}
 //#endregion
-__esmMin((() => {
-	init_a_first();
-	init_eagerhaz();
-	init_e_first();
-	init_forwarder();
-	init_definer_b();
-	globalThis.__result = {
-		pv,
-		bv,
-		marker: marker(),
-		carried: globalThis.__carried
-	};
-}))();
+//#region main.js
+function init_main() {
+	return (init_main = __esmMin((() => {
+		init_a_first();
+		init_eagerhaz();
+		init_e_first();
+		init_definer();
+		init_definer_b();
+		globalThis.__result = {
+			pv,
+			bv,
+			marker: marker(),
+			carried: globalThis.__carried
+		};
+	})))();
+}
+//#endregion
+init_main();
 
 ```
 

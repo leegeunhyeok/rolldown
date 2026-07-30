@@ -11,13 +11,11 @@ import {
 } from './bindingify-build-hooks';
 
 import {
+  bindingifyAddonHook,
   bindingifyAugmentChunkHash,
-  bindingifyBanner,
+  bindingifyResolveFileUrl,
   bindingifyCloseBundle,
-  bindingifyFooter,
   bindingifyGenerateBundle,
-  bindingifyIntro,
-  bindingifyOutro,
   bindingifyRenderChunk,
   bindingifyRenderError,
   bindingifyRenderStart,
@@ -29,13 +27,20 @@ import type { LogLevelOption } from '../log/logging';
 import { error, logPluginError } from '../log/logs';
 import type { InputOptions } from '../options/input-options';
 import type { OutputOptions } from '../options/output-options';
-import { bindingifyCloseWatcher, bindingifyWatchChange } from './bindingify-watch-hooks';
+import {
+  bindingifyCloseWatcher,
+  bindingifyHotUpdate,
+  bindingifyWatchChange,
+} from './bindingify-watch-hooks';
 import { extractHookUsage } from './generated/hook-usage';
 import type { Plugin, RolldownPlugin } from './index';
+import type { PluginWithInternalHooks } from './internal-hooks';
 import type { PluginContextData } from './plugin-context-data';
 
 export interface BindingifyPluginArgs {
-  plugin: Plugin;
+  // `PluginWithInternalHooks` rather than `Plugin` so the bindingify functions
+  // can read hidden hooks (see ./internal-hooks) without casting.
+  plugin: PluginWithInternalHooks;
   options: InputOptions;
   outputOptions: OutputOptions;
   pluginContextData: PluginContextData;
@@ -98,6 +103,8 @@ export function bindingifyPlugin(
 
   const { plugin: augmentChunkHash, meta: augmentChunkHashMeta } = bindingifyAugmentChunkHash(args);
 
+  const { plugin: resolveFileUrl, meta: resolveFileUrlMeta } = bindingifyResolveFileUrl(args);
+
   const { plugin: renderStart, meta: renderStartMeta } = bindingifyRenderStart(args);
 
   const { plugin: renderError, meta: renderErrorMeta } = bindingifyRenderError(args);
@@ -108,15 +115,17 @@ export function bindingifyPlugin(
 
   const { plugin: closeBundle, meta: closeBundleMeta } = bindingifyCloseBundle(args);
 
-  const { plugin: banner, meta: bannerMeta } = bindingifyBanner(args);
+  const { plugin: banner, meta: bannerMeta } = bindingifyAddonHook(args, 'banner');
 
-  const { plugin: footer, meta: footerMeta } = bindingifyFooter(args);
+  const { plugin: footer, meta: footerMeta } = bindingifyAddonHook(args, 'footer');
 
-  const { plugin: intro, meta: introMeta } = bindingifyIntro(args);
+  const { plugin: intro, meta: introMeta } = bindingifyAddonHook(args, 'intro');
 
-  const { plugin: outro, meta: outroMeta } = bindingifyOutro(args);
+  const { plugin: outro, meta: outroMeta } = bindingifyAddonHook(args, 'outro');
 
   const { plugin: watchChange, meta: watchChangeMeta } = bindingifyWatchChange(args);
+
+  const { plugin: hotUpdate, meta: hotUpdateMeta } = bindingifyHotUpdate(args);
 
   const { plugin: closeWatcher, meta: closeWatcherMeta } = bindingifyCloseWatcher(args);
 
@@ -151,6 +160,8 @@ export function bindingifyPlugin(
     renderChunkFilter,
     augmentChunkHash,
     augmentChunkHashMeta,
+    resolveFileUrl,
+    resolveFileUrlMeta,
     renderStart,
     renderStartMeta,
     renderError,
@@ -171,6 +182,8 @@ export function bindingifyPlugin(
     outroMeta,
     watchChange,
     watchChangeMeta,
+    hotUpdate,
+    hotUpdateMeta,
     closeWatcher,
     closeWatcherMeta,
     // MARK - rollipop
@@ -192,6 +205,7 @@ function wrapHandlers(plugin: BindingPluginOptions): BindingPluginOptions {
     'load',
     'renderChunk',
     'augmentChunkHash',
+    'resolveFileUrl',
     'renderStart',
     'renderError',
     'generateBundle',
@@ -202,6 +216,7 @@ function wrapHandlers(plugin: BindingPluginOptions): BindingPluginOptions {
     'intro',
     'outro',
     'watchChange',
+    'hotUpdate',
     'closeWatcher',
     // MARK - rollipop
     'transformCacheHit',

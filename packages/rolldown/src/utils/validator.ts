@@ -607,6 +607,7 @@ const DevModeSchema = v.union([
     port: v.optional(v.number()),
     host: v.optional(v.string()),
     implement: v.optional(v.string()),
+    skipCommonRuntimeInjection: v.optional(v.boolean()),
     lazy: v.optional(v.boolean()),
   }),
 ]);
@@ -1006,7 +1007,7 @@ const OutputOptionsSchema = v.strictObject({
   ),
   strictExecutionOrder: v.pipe(
     v.optional(v.boolean()),
-    v.description('Lets modules be executed in the order they are declared.'),
+    v.description('Preserve source module execution order across generated chunks.'),
   ),
   strict: v.pipe(
     v.optional(v.union([v.boolean(), v.literal('auto')])),

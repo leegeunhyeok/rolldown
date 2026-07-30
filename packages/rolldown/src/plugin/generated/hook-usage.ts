@@ -23,7 +23,9 @@ export enum HookUsageKind {
   footer = 1 << 18,
   intro = 1 << 19,
   outro = 1 << 20,
-  transformCacheHit = 1 << 21,
+  resolveFileUrl = 1 << 21,
+  hotUpdate = 1 << 22,
+  transformCacheHit = 1 << 23,
 }
 
 export class HookUsage {
@@ -42,8 +44,8 @@ export class HookUsage {
   }
 }
 
-import type { Plugin } from '../..';
-export function extractHookUsage(plugin: Plugin): HookUsage {
+import type { PluginWithInternalHooks } from '../internal-hooks';
+export function extractHookUsage(plugin: PluginWithInternalHooks): HookUsage {
   let hookUsage = new HookUsage();
 
   if (plugin.buildStart) {
@@ -124,6 +126,14 @@ export function extractHookUsage(plugin: Plugin): HookUsage {
 
   if (plugin.outro) {
     hookUsage.union(HookUsageKind.outro);
+  }
+
+  if (plugin.resolveFileUrl) {
+    hookUsage.union(HookUsageKind.resolveFileUrl);
+  }
+
+  if (plugin.hotUpdate) {
+    hookUsage.union(HookUsageKind.hotUpdate);
   }
 
   if (plugin.transformCacheHit) {

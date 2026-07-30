@@ -28,18 +28,23 @@ import { sep } from "node:path";
 // HIDDEN [\0rolldown/runtime.js]
 //#region dep.js
 var marker;
-var init_dep = __esmMin((() => {
-	globalThis.__depRan = true;
-	marker = `dep:${sep.length > 0}`;
-}));
+function init_dep() {
+	return (init_dep = __esmMin((() => {
+		globalThis.__depRan = true;
+		marker = `dep:${sep.length > 0}`;
+	})))();
+}
 //#endregion
 //#region main.js
 var out;
+function init_main() {
+	return (init_main = __esmMin((() => {
+		init_dep();
+		out = marker;
+	})))();
+}
 //#endregion
-__esmMin((() => {
-	init_dep();
-	out = marker;
-}))();
+init_main();
 export { out };
 
 ```
@@ -52,17 +57,12 @@ export { out };
 
 ```js
 import { sep } from "node:path";
-// HIDDEN [\0rolldown/runtime.js]
-var marker, out;
-__esmMin((() => {
-	//#region dep.js
-	globalThis.__depRan = true;
-	marker = `dep:${sep.length > 0}`;
-	//#endregion
-	//#region main.js
-	out = marker;
-	//#endregion
-}))();
+//#region dep.js
+globalThis.__depRan = true;
+//#endregion
+//#region main.js
+const out = `dep:${sep.length > 0}`;
+//#endregion
 export { out };
 
 ```

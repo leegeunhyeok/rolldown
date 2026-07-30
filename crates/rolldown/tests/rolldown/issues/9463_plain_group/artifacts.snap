@@ -39,18 +39,22 @@ function foo() {
 }
 //#endregion
 //#region a.js
-var init_a = __esmMin((() => {
-	(globalThis.sideEffectLog ??= []).push("a");
-	foo();
-}));
+function init_a() {
+	return (init_a = __esmMin((() => {
+		(globalThis.sideEffectLog ??= []).push("a");
+		foo();
+	})))();
+}
 //#endregion
 //#region b.js
-var init_b = __esmMin((() => {
-	(globalThis.sideEffectLog ??= []).push("b");
-	Promise.resolve().then(() => shared_exports).then(({ foo }) => {
-		foo();
-	});
-}));
+function init_b() {
+	return (init_b = __esmMin((() => {
+		(globalThis.sideEffectLog ??= []).push("b");
+		Promise.resolve().then(() => shared_exports).then(({ foo }) => {
+			foo();
+		});
+	})))();
+}
 //#endregion
 export { init_a as n, init_b as t };
 
@@ -94,22 +98,24 @@ var shared_exports = /* @__PURE__ */ __exportAll({ foo: () => foo });
 function foo() {
 	(globalThis.sideEffectLog ??= []).push("shared-foo");
 }
-var init_shared = __esmMin((() => {}));
 //#endregion
 //#region a.js
-var init_a = __esmMin((() => {
-	init_shared();
-	(globalThis.sideEffectLog ??= []).push("a");
-	foo();
-}));
+function init_a() {
+	return (init_a = __esmMin((() => {
+		(globalThis.sideEffectLog ??= []).push("a");
+		foo();
+	})))();
+}
 //#endregion
 //#region b.js
-var init_b = __esmMin((() => {
-	(globalThis.sideEffectLog ??= []).push("b");
-	Promise.resolve().then(() => (init_shared(), shared_exports)).then(({ foo }) => {
-		foo();
-	});
-}));
+function init_b() {
+	return (init_b = __esmMin((() => {
+		(globalThis.sideEffectLog ??= []).push("b");
+		Promise.resolve().then(() => shared_exports).then(({ foo }) => {
+			foo();
+		});
+	})))();
+}
 //#endregion
 export { init_a as n, init_b as t };
 

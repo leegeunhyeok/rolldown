@@ -23,6 +23,7 @@ const ENUMERATED_OUTPUT_PLUGIN_HOOK_NAMES = [
   'renderError',
   'writeBundle',
   'generateBundle',
+  'resolveFileUrl',
 ] as const;
 
 const ENUMERATED_PLUGIN_HOOK_NAMES: [
@@ -94,4 +95,5 @@ export const DEFINED_HOOK_NAMES: DefinedHookNames = {
   [ENUMERATED_PLUGIN_HOOK_NAMES[22]]: ENUMERATED_PLUGIN_HOOK_NAMES[22],
   // MARK - rollipop
   [ENUMERATED_PLUGIN_HOOK_NAMES[23]]: ENUMERATED_PLUGIN_HOOK_NAMES[23],
+  [ENUMERATED_PLUGIN_HOOK_NAMES[24]]: ENUMERATED_PLUGIN_HOOK_NAMES[24],
 } as const;

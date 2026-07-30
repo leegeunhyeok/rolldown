@@ -26,6 +26,8 @@ bitflags! {
     const Footer = 1 << 18;
     const Intro = 1 << 19;
     const Outro = 1 << 20;
-    const TransformCacheHit = 1 << 21;
+    const ResolveFileUrl = 1 << 21;
+    const HotUpdate = 1 << 22;
+    const TransformCacheHit = 1 << 23;
   }
 }

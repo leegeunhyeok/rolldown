@@ -7,7 +7,7 @@ use anyhow::Context;
 use arcstr::ArcStr;
 use dashmap::{DashMap, DashSet, Entry};
 use rolldown_error::{BuildDiagnostic, InvalidOptionType};
-use rolldown_std_utils::path_buf_to_slash;
+use rolldown_std_utils::normalize_path_buf_to_slash;
 use rolldown_utils::dashmap::{FxDashMap, FxDashSet};
 use rolldown_utils::make_unique_name::make_unique_name;
 use rolldown_utils::xxhash::{xxhash_base64_url, xxhash_with_base};
@@ -16,7 +16,6 @@ use std::path::Path;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use sugar_path::SugarPathBuf;
 
 #[derive(Debug, Default)]
 pub struct EmittedAsset {
@@ -271,7 +270,7 @@ impl FileEmitter {
         })
         .as_bytes(),
     )
-    // The reference id can be used for import.meta.ROLLUP_FILE_URL_referenceId and therefore needs to be a valid identifier.
+    // The reference id can be used for import.meta.ROLLDOWN_FILE_URL_referenceId and therefore needs to be a valid identifier.
     .replace('-', "$")
     .into()
   }
@@ -294,7 +293,7 @@ impl FileEmitter {
       let name = path.file_stem().and_then(OsStr::to_str).map(|stem| {
         if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
           // Normalize to resolve ".." and "." where possible, then convert to forward slashes
-          path_buf_to_slash(parent.join(stem).into_normalized())
+          normalize_path_buf_to_slash(parent.join(stem))
         } else {
           stem.to_string()
         }
@@ -459,3 +458,31 @@ impl FileEmitter {
 }
 
 pub type SharedFileEmitter = Arc<FileEmitter>;
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  /// Reference ids are the base64url encoding of a 128-bit xxhash (with `-` remapped to `$`),
+  /// which is always 22 characters. The `import.meta.ROLLDOWN_FILE_URL_<referenceId>_<urlId>`
+  /// parser depends on this: because a reference id can contain any identifier character
+  /// (`[A-Za-z0-9_$]`, including `$` and `_`), the `urlId` cannot be found by searching for a
+  /// separator, so it is split off by this fixed length instead.
+  ///
+  /// If this length ever changes, `REFERENCE_ID_LEN` in `rolldown/src/utils/file_url.rs` must
+  /// be updated in lockstep or urlId parsing will silently corrupt reference ids.
+  #[test]
+  fn assign_reference_id_is_always_22_chars() {
+    let emitter = FileEmitter::new(Arc::new(NormalizedBundlerOptions::default()));
+
+    // Counter-based ids: assets emitted without an explicit file name.
+    for _ in 0..1000 {
+      assert_eq!(emitter.assign_reference_id(None).len(), 22);
+    }
+
+    // Name/file-name-based ids: chunks and explicitly named files, including edge-case inputs.
+    for name in ["a", "index.js", "assets/deeply/nested/asset.name.txt", ""] {
+      assert_eq!(emitter.assign_reference_id(Some(ArcStr::from(name))).len(), 22, "name={name:?}");
+    }
+  }
+}

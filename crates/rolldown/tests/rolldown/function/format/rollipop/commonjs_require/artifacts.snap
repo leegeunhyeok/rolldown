@@ -7,7 +7,7 @@ source: crates/rolldown_testing/src/integration_test.rs
 
 ```js
 (function(global) {
-	//#endregion
+	// HIDDEN [\0rolldown/runtime.js]
 	//#region \0rollipop/runtime
 	var __rollipop_module_cache = {};
 	function __rollipop_require__(id) {

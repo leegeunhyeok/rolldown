@@ -6,6 +6,7 @@ source: crates/rolldown_testing/src/integration_test.rs
 ## main.js
 
 ```js
+//#region tla.js
 //#endregion
 //#region lib.js
 const value = await Promise.resolve("tla") + "+lib";
@@ -24,20 +25,29 @@ export { value };
 // HIDDEN [\0rolldown/runtime.js]
 //#region tla.js
 var value$1;
-var init_tla = __esmMin((async () => {
-	value$1 = await Promise.resolve("tla");
-}));
+function init_tla() {
+	return (init_tla = __esmMin((async () => {
+		value$1 = await Promise.resolve("tla");
+	})))();
+}
 //#endregion
 //#region lib.js
 var value;
-var init_lib = __esmMin((async () => {
-	await init_tla();
-	value = value$1 + "+lib";
-}));
+function init_lib() {
+	return (init_lib = __esmMin((async () => {
+		await init_tla();
+		value = value$1 + "+lib";
+	})))();
+}
 //#endregion
-await __esmMin((async () => {
-	await init_lib();
-}))();
+//#region main.js
+function init_main() {
+	return (init_main = __esmMin((async () => {
+		await init_lib();
+	})))();
+}
+//#endregion
+await init_main();
 export { value };
 
 ```
@@ -49,20 +59,11 @@ export { value };
 ### main.js
 
 ```js
-// HIDDEN [\0rolldown/runtime.js]
-var value$1, value;
-var init_lib = __esmMin((async () => {
-	//#region tla.js
-	value$1 = await Promise.resolve("tla");
-	//#endregion
-	//#region lib.js
-	value = value$1 + "+lib";
-	//#endregion
-}));
+//#region tla.js
 //#endregion
-await __esmMin((async () => {
-	await init_lib();
-}))();
+//#region lib.js
+const value = await Promise.resolve("tla") + "+lib";
+//#endregion
 export { value };
 
 ```

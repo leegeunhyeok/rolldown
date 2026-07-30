@@ -21,21 +21,18 @@ var require_commonjs = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	module.exports = require_react();
 }));
 //#endregion
+//#region lib.js
+require_commonjs();
 function test() {
 	return 1;
 }
-var import_commonjs;
-__esmMin((() => {
-	//#region lib.js
-	require_commonjs();
-	//#endregion
-	//#region main.js
-	import_commonjs = /* @__PURE__ */ __toESM(require_commonjs());
-	assert.equal(import_commonjs.createReactElement(), "div");
-	assert.equal(1 .toString(), "1");
-	assert.equal(test().toString(), "1");
-	//#endregion
-}))();
+//#endregion
+//#region main.js
+var import_commonjs = /* @__PURE__ */ __toESM(require_commonjs());
+assert.equal(import_commonjs.createReactElement(), "div");
+assert.equal(1 .toString(), "1");
+assert.equal(test().toString(), "1");
+//#endregion
 
 ```
 
@@ -65,19 +62,24 @@ var require_commonjs = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 function test() {
 	return 1;
 }
-var init_lib = __esmMin((() => {
-	require_commonjs();
-}));
+function init_lib() {
+	return (init_lib = __esmMin((() => {
+		require_commonjs();
+	})))();
+}
 //#endregion
 //#region main.js
 var import_commonjs;
+function init_main() {
+	return (init_main = __esmMin((() => {
+		import_commonjs = /* @__PURE__ */ __toESM(require_commonjs());
+		init_lib();
+		assert.equal(import_commonjs.createReactElement(), "div");
+		assert.equal(1 .toString(), "1");
+		assert.equal(test().toString(), "1");
+	})))();
+}
 //#endregion
-__esmMin((() => {
-	import_commonjs = /* @__PURE__ */ __toESM(require_commonjs());
-	init_lib();
-	assert.equal(import_commonjs.createReactElement(), "div");
-	assert.equal(1 .toString(), "1");
-	assert.equal(test().toString(), "1");
-}))();
+init_main();
 
 ```

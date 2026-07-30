@@ -7,7 +7,10 @@ import type { DefinedHookNames } from '../constants/plugin';
 import type { DEFINED_HOOK_NAMES } from '../constants/plugin';
 import type { LogLevel, RolldownLog } from '../log/logging';
 import type { NormalizedInputOptions } from '../options/normalized-input-options';
-import type { NormalizedOutputOptions } from '../options/normalized-output-options';
+import type {
+  InternalModuleFormat,
+  NormalizedOutputOptions,
+} from '../options/normalized-output-options';
 import type { ModuleInfo } from '../types/module-info';
 import type { OutputBundle } from '../types/output-bundle';
 import type { RenderedChunk } from '../types/rolldown-output';
@@ -174,6 +177,46 @@ export interface SourceDescription
    */
   map?: SourceMapInput;
   moduleType?: ModuleType;
+}
+
+/**
+ * Argument passed to the {@linkcode FunctionPluginHooks.resolveFileUrl | resolveFileUrl} hook.
+ *
+ * @category Plugin APIs
+ */
+export interface ResolveFileUrlArgs {
+  /**
+   * The preliminary filename of the chunk containing the reference with hash placeholders.
+   * Similar to {@linkcode RenderedChunk.fileName | chunk.fileName}.
+   */
+  chunkId: string;
+  /** The filename of the emitted file, relative to the output directory. */
+  fileName: string;
+  /** The rendered output format. */
+  format: InternalModuleFormat;
+  /**
+   * The id of the original module this file was referenced by
+   * using the `import.meta.ROLLDOWN_FILE_URL_*` reference.
+   */
+  moduleId: string;
+  /** The reference id of this file. */
+  referenceId: string;
+  /**
+   * The path of the emitted file, relative to the chunk the file is referenced from.
+   *
+   * This path will contain no leading `./`, but may contain a leading `../`.
+   */
+  relativePath: string;
+  /**
+   * The `urlId` of an `import.meta.ROLLDOWN_FILE_URL_<referenceId>_<urlId>` reference,
+   * or `undefined` when the reference has no `urlId`.
+   *
+   * This is a rolldown-specific extension: the Rollup-compatible
+   * `import.meta.ROLLUP_FILE_URL_<referenceId>` form never carries a `urlId`.
+   *
+   * @experimental This API may change in minor versions.
+   */
+  urlId?: string | undefined;
 }
 
 /** @inline */
@@ -505,6 +548,16 @@ export interface FunctionPluginHooks {
   ) => string | void;
 
   /**
+   * {@include ./docs/plugin-hooks-resolvefileurl.md}
+   *
+   * @group Output Generation Hooks
+   */
+  [DEFINED_HOOK_NAMES.resolveFileUrl]: (
+    this: PluginContext,
+    args: ResolveFileUrlArgs,
+  ) => string | NullValue;
+
+  /**
    * Called when Rolldown encounters an error during
    * {@linkcode RolldownBuild.generate | bundle.generate()} or
    * {@linkcode RolldownBuild.write | bundle.write()}.
@@ -631,9 +684,12 @@ export type ObjectHookMeta = {
  * @category Plugin APIs
  */
 export type ObjectHook<T, O = {}> = T | ({ handler: T } & ObjectHookMeta & O);
-type SyncPluginHooks = DefinedHookNames['augmentChunkHash' | 'onLog' | 'outputOptions'];
+type SyncPluginHooks = DefinedHookNames[
+  | 'augmentChunkHash'
+  | 'onLog'
+  | 'outputOptions'
+  | 'resolveFileUrl'];
 // | 'renderDynamicImport'
-// | 'resolveFileUrl'
 // | 'resolveImportMeta'
 
 /** @category Plugin APIs */
@@ -643,7 +699,7 @@ type FirstPluginHooks = DefinedHookNames[
   | 'load'
   // | 'renderDynamicImport'
   | 'resolveDynamicImport'
-  // | 'resolveFileUrl'
+  | 'resolveFileUrl'
   | 'resolveId'];
 // | 'resolveImportMeta'
 // | 'shouldTransformCachedModule'
@@ -698,7 +754,7 @@ type OutputPluginHooks = DefinedHookNames[
   // | 'renderDynamicImport'
   | 'renderError'
   | 'renderStart'
-  // | 'resolveFileUrl'
+  | 'resolveFileUrl'
   // | 'resolveImportMeta'
   | 'writeBundle'];
 

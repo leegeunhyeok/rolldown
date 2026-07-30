@@ -8,14 +8,21 @@ source: crates/rolldown_testing/src/integration_test.rs
 ```js
 // HIDDEN [\0rolldown/runtime.js]
 //#region dep.js
-var init_dep = __esmMin((() => {
-	console.log("dep");
-}));
+function init_dep() {
+	return (init_dep = __esmMin((() => {
+		console.log("dep");
+	})))();
+}
 //#endregion
-__esmMin((() => {
-	init_dep();
-	console.log("main", "v");
-}))();
+//#region main.js
+function init_main() {
+	return (init_main = __esmMin((() => {
+		init_dep();
+		console.log("main", "v");
+	})))();
+}
+//#endregion
+init_main();
 
 ```
 
@@ -26,10 +33,11 @@ __esmMin((() => {
 ### main.js
 
 ```js
-// HIDDEN [\0rolldown/runtime.js]
-	//#region main.js
-	console.log("main", "v");
-	//#endregion
-}))();
+//#region dep.js
+console.log("dep");
+//#endregion
+//#region main.js
+console.log("main", "v");
+//#endregion
 
 ```

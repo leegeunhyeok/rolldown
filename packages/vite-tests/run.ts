@@ -3,11 +3,8 @@ import path from 'node:path';
 import { styleText } from 'node:util';
 import { x } from 'tinyexec';
 
+const VITE_DIR = path.resolve(import.meta.dirname, '../../vite');
 const REPO_PATH = path.resolve(import.meta.dirname, './repo');
-const ROLLDOWN_REPO_ROOT = path.resolve(import.meta.dirname, '../..');
-// Single source of truth for the vite commit used by tests in this repo:
-// the pin of the `packages/test-dev-server/vite` submodule.
-const VITE_SUBMODULE_PATH = 'packages/test-dev-server/vite';
 const OVERRIDES = [
   `  rolldown: ${path.resolve(import.meta.dirname, '../rolldown')}`
 ];
@@ -47,27 +44,23 @@ async function runCmdAndPipeOrExit(title: string, cmdOptions: Parameters<typeof 
 
 fs.rmSync(REPO_PATH, { recursive: true, force: true });
 
-// Read the pinned vite commit from the submodule gitlink. This works without
-// initializing the submodule, so CI does not need a submodule checkout here.
-const pinResult = await x('git', ['rev-parse', `HEAD:${VITE_SUBMODULE_PATH}`], {
-  nodeOptions: { cwd: ROLLDOWN_REPO_ROOT },
-});
-if (pinResult.exitCode !== 0) {
-  console.error(styleText(['red', 'bold'], `Failed to read the vite pin from the ${VITE_SUBMODULE_PATH} submodule.`));
+// Reuse the shared `vite/` checkout at the repo root, prepared by
+// `just setup-vite` (the latest `rolldown-canary` rebased onto the latest
+// `main`), the same code the dev-server tests run on. Setup happens only
+// there, never here, so the checkout and the dev-server's built vite dist
+// cannot drift apart. The tests run on a throwaway LOCAL clone of the
+// checkout, never on the checkout itself: this suite edits tracked files
+// (pnpm overrides) and the checkout must stay unpatched. The clone shares
+// objects via hardlinks, so it needs no network.
+if (!fs.existsSync(path.join(VITE_DIR, 'package.json'))) {
+  console.error(
+    styleText(['red', 'bold'], `Vite checkout not found at ${VITE_DIR}. Run \`just setup-vite\` first.`),
+  );
   process.exit(1);
 }
-const vitePin = pinResult.stdout.trim();
-
 await runCmdAndPipeOrExit(
-  '# Cloning vite repo...',
-  ['git', ['clone', 'https://github.com/vitejs/vite.git', REPO_PATH]],
-);
-
-// The pinned commit must be pushed to vitejs/vite (same requirement as the
-// submodule itself), otherwise this checkout fails.
-await runCmdAndPipeOrExit(
-  `# Checking out pinned vite commit ${vitePin}...`,
-  ['git', ['-c', 'advice.detachedHead=false', 'checkout', vitePin], { nodeOptions: { cwd: REPO_PATH } }],
+  '# Cloning the local vite checkout...',
+  ['git', ['clone', VITE_DIR, REPO_PATH]],
 );
 
 printTitle('# Updating pnpm-workspace.yaml to link to local rolldown...');
@@ -162,6 +155,12 @@ const failedTestServe = await runCmdAndPipe(
   ['pnpm', ['run', 'test-serve'], { nodeOptions: { cwd: REPO_PATH } }],
 );
 if (failedTestServe) failed.push('test-serve');
+
+const failedTestServeBundled = await runCmdAndPipe(
+  '# Running `pnpm test-serve-bundled`...',
+  ['pnpm', ['run', 'test-serve-bundled'], { nodeOptions: { cwd: REPO_PATH } }],
+);
+if (failedTestServeBundled) failed.push('test-serve-bundled');
 
 const failedTestBuild = await runCmdAndPipe(
   '# Running `pnpm test-build`...',

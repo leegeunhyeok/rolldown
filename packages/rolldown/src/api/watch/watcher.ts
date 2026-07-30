@@ -1,4 +1,9 @@
-import { type BindingWatcherEvent, BindingWatcher, shutdownAsyncRuntime } from '../../binding.cjs';
+import {
+  type BindingWatcherEvent,
+  BindingWatcher,
+  shutdownAsyncRuntime,
+  startAsyncRuntime,
+} from '../../binding.cjs';
 import { LOG_LEVEL_WARN } from '../../log/logging';
 import { logMultipleWatcherOption } from '../../log/logs';
 import { aggregateBindingErrorsIntoJsError } from '../../utils/error';
@@ -69,6 +74,7 @@ class Watcher {
     this.closed = false;
     this.inner = inner;
     this.emitter = emitter;
+    startAsyncRuntime();
     const originClose = emitter.close.bind(emitter);
     emitter.close = async () => {
       await this.close();
@@ -85,11 +91,14 @@ class Watcher {
   async close(): Promise<void> {
     if (this.closed) return;
     this.closed = true;
-    for (const stop of this.stopWorkers) {
-      await stop?.();
+    try {
+      for (const stop of this.stopWorkers) {
+        await stop?.();
+      }
+      await this.inner.close();
+    } finally {
+      shutdownAsyncRuntime();
     }
-    await this.inner.close();
-    shutdownAsyncRuntime();
   }
 
   private async run(): Promise<void> {

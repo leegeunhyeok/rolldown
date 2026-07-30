@@ -51,6 +51,7 @@ Rust Core (crates/rolldown)
 - `crates/rolldown_watcher`: Watch mode coordinator. See `internal-docs/watch-mode/implementation.md` for architecture, state machine, debounce/consolidation rules, and event lifecycle.
 - `docs/`: Documentation site built with VitePress.
 - `internal-docs/`: Internal design & implementation docs — one folder per feature (`design.md` + `implementation.md`). See the "Context Engineering" section above.
+- Path manipulation: read `internal-docs/path-manipulation/style-guide.md` before composing paths, and prefer its consuming `rolldown_std_utils` helpers for owned `PathBuf` values.
 
 ## Auto-generated or Submodule Files
 
@@ -83,6 +84,10 @@ IMPORTANT: The project uses `just` as a task runner. Always prefer `just` comman
 # Pull Requests
 
 - **Open PRs as drafts and keep them that way until the user says otherwise.** When you create a pull request, always create it as a **draft** (`gh pr create --draft`). Do NOT convert a draft to "ready for review", mark a PR ready, or request/assign reviewers unless the user has explicitly told you they are ready for team review. Publishing a PR for review pings reviewers and code owners and clutters their inboxes — never trigger that on the user's behalf prematurely. If you are unsure whether the user is ready, leave the PR as a draft and ask first.
+
+# Windows CI
+
+- For Windows coverage on a PR, add the `ci: windows` label, then rerun all jobs in the latest `CI` workflow run whose event is `pull_request` and whose head SHA matches the PR. Adding the label alone does not start a workflow. Keep the label so later PR pushes also run the Windows jobs.
 
 # Common Pitfalls & Best Practices
 

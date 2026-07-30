@@ -1,7 +1,7 @@
+use oxc::ast::builder::AstBuilder;
 use oxc_traverse::traverse_mut;
 use rolldown_common::OutputFormat;
 use rolldown_ecmascript::EcmaAst;
-use rolldown_ecmascript_utils::AstFactory;
 use rolldown_utils::index_vec_ext::IndexVecExt;
 use rolldown_utils::rayon::ParallelIterator as _;
 use tracing::debug_span;
@@ -43,7 +43,7 @@ impl GenerateStage<'_> {
           ast.program.with_mut(|fields| {
             let scoping = EcmaAst::make_semantic(fields.program).into_scoping();
             let mut finalizer = RollipopAstFinalizer::new(
-              AstFactory::new(fields.allocator),
+              AstBuilder::new(fields.allocator),
               RollipopAstFinalizerContext { link_output, options, module, unique_index },
             );
             traverse_mut(&mut finalizer, fields.allocator, fields.program, scoping, ());

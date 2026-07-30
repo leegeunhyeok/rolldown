@@ -26,8 +26,12 @@ impl GenerateStage<'_> {
   /// un-included and stripped from its chunk.
   ///
   /// Must run after `find_entry_level_external_module` and
-  /// `finalized_module_namespace_ref_usage` (the facts it reads), and before the chunk
-  /// exec-order assignment and `compute_cross_chunk_links` (the consumers of what it mutates).
+  /// `finalized_module_namespace_ref_usage` (the facts it reads), and before
+  /// `compute_cross_chunk_links` (the consumer of what it mutates). If execution order was
+  /// already assigned, the caller must re-derive chunk exec orders (`assign_chunk_exec_orders`)
+  /// and then rebuild the live sorted-chunk list after a removal: a still-live `Common` chunk the
+  /// runtime shared keys on `modules[0]`, so re-sorting the existing values alone would leave it
+  /// keyed on the module it just lost.
   ///
   /// See internal-docs/code-splitting/implementation.md ("Unused-Runtime Sweep") for the
   /// pipeline position and the liveness invariants this pass relies on.

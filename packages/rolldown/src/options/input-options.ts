@@ -220,6 +220,13 @@ export type DevModeOptions =
       host?: string;
       port?: number;
       implement?: string;
+      /**
+       * Prevent Rolldown from prepending its common dev runtime to {@link implement}.
+       * @deprecated Common runtime injection will be disabled by default in the future.
+       * Include the common runtime in {@link implement} instead.
+       * @default false
+       */
+      skipCommonRuntimeInjection?: boolean;
       lazy?: boolean;
     };
 
@@ -351,7 +358,7 @@ export interface InputOptions {
      * ```
      * > [!WARNING]
      * > `resolve.alias` will not call [`resolveId`](/reference/Interface.Plugin#resolveid) hooks of other plugin.
-     * > If you want to call `resolveId` hooks of other plugin, use `viteAliasPlugin` from `rolldown/experimental` instead.
+     * > If you want to call `resolveId` hooks of other plugin, use `viteAliasPlugin` from `@rollipop/rolldown/experimental` instead.
      * > You could find more discussion in [this issue](https://github.com/rolldown/rolldown/issues/3615)
      */
     alias?: Record<string, string[] | string | false>;
@@ -646,7 +653,8 @@ export interface InputOptions {
     chunkImportMap?: boolean | { baseUrl?: string; fileName?: string };
 
     /**
-     * Enable on-demand wrapping of modules.
+     * Under `output.strictExecutionOrder`, derive a conservative wrapping plan from predicted
+     * chunk execution hazards instead of wrapping every eligible module.
      * @default false
      * @hidden not ready for public usage yet
      */
