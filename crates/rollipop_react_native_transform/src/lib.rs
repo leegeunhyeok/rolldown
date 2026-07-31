@@ -50,8 +50,8 @@ use swc_ecma_transforms_typescript::{
 use swc_ecma_utils::NodeIgnoringSpan;
 use swc_ecma_visit::VisitMutWith;
 use swc_react_native::{
-  CodegenOptions, CodegenVisitor, WorkletsOptions, WorkletsVisitor, async_arrow_non_simple_params,
-  class_in_finally, super_in_object_accessor,
+  CodegenOptions, CodegenVisitor, WorkletsOptions, WorkletsVisitor,
+  fix_async_arrow_non_simple_params, fix_class_in_finally, fix_super_in_object_accessor,
 };
 
 use crate::visitors::{RemoveFlowTypeOnlyFields, template_literal_caching};
@@ -426,9 +426,9 @@ impl Transformer {
             RuntimeTarget::HermesV1 => (
               hermes_regexp(RuntimeTarget::HermesV1),
               template_literal_caching(),
-              async_arrow_non_simple_params(),
-              super_in_object_accessor(),
-              class_in_finally(),
+              fix_async_arrow_non_simple_params(),
+              fix_super_in_object_accessor(),
+              fix_class_in_finally(),
               async_to_generator(async_to_generator::Config::default(), unresolved_mark),
               block_scoping(unresolved_mark),
             )
