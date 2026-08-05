@@ -104,7 +104,6 @@ impl TryFrom<TransformOptions> for oxc::transformer::TransformOptions {
 
   fn try_from(options: TransformOptions) -> Result<Self, Self::Error> {
     // MARK: - Rollipop
-    let react_compiler = options.react_compiler().cloned();
     let env = match options.target {
       Some(Either::Left(s)) => EnvOptions::from_target(&s)?,
       Some(Either::Right(list)) => EnvOptions::from_target_list(&list)?,
@@ -138,8 +137,6 @@ impl TryFrom<TransformOptions> for oxc::transformer::TransformOptions {
         .helpers
         .map_or_else(HelperLoaderOptions::default, HelperLoaderOptions::from),
       plugins: oxc::transformer::PluginsOptions::from(options.plugins.unwrap_or_default()),
-      // MARK: - Rollipop
-      react_compiler: react_compiler.map(Into::into),
       ..Default::default()
     })
   }

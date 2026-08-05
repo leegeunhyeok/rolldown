@@ -2,7 +2,7 @@ use oxc::{
   allocator::{Allocator, Box as ArenaBox, GetAllocator, TakeIn},
   ast::{
     ast::{self, ExportDefaultDeclarationKind, Expression, ObjectPropertyKind, Statement},
-    builder::{AstBuilder, GetAstBuilder, NONE},
+    builder::{AstBuilder, GetAstBuilder},
   },
   semantic::{IsGlobalReference, Scoping, SymbolId},
   span::{GetSpanMut, SPAN, Span},
@@ -591,94 +591,96 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
               program_body.push(stmt);
             }
           }
-          ast::ModuleDeclaration::ExportNamedDeclaration(decl) => {
-            if decl.source.is_some() {
-              let rec_id = self.ctx.module.imports[&decl.node_id()];
-              if decl.specifiers.is_empty() {
-                let rec = &self.ctx.module.import_records[rec_id];
-                let Some(importee_idx) = rec.resolved_module else {
-                  return;
-                };
-                if self.should_require_importee(importee_idx) {
-                  let binding_name = self.binding_name_for_import(importee_idx, rec_id).to_string();
-                  if let Some(stmt) =
-                    self.create_import_binding_stmt(&self.modules()[importee_idx], &binding_name)
-                  {
-                    program_body.push(stmt);
-                  }
-                }
+          ast::ModuleDeclaration::ExportFromDeclaration(decl) => {
+            let rec_id = self.ctx.module.imports[&decl.node_id()];
+            if decl.specifiers.is_empty() {
+              let rec = &self.ctx.module.import_records[rec_id];
+              let Some(importee_idx) = rec.resolved_module else {
                 return;
-              }
-              let mut props =
-                oxc::allocator::Vec::with_capacity_in(decl.specifiers.len(), &self.ast_factory);
-              for specifier in &decl.specifiers {
-                let local = match &specifier.local {
-                  ast::ModuleExportName::IdentifierName(ident) => {
-                    Specifier::Literal(ident.name.into())
-                  }
-                  ast::ModuleExportName::StringLiteral(str) => Specifier::Literal(str.value.into()),
-                  ast::ModuleExportName::IdentifierReference(_) => unreachable!(
-                    "IdentifierReference is invalid in re-exported ExportNamedDeclaration"
-                  ),
-                };
-                let exported = specifier.exported.name();
-                let Some((import_binding, stmt)) =
-                  self.create_import_binding_for_re_export(rec_id, &local, decl.span)
-                else {
-                  continue;
-                };
-                if let Some(stmt) = stmt {
+              };
+              if self.should_require_importee(importee_idx) {
+                let binding_name = self.binding_name_for_import(importee_idx, rec_id).to_string();
+                if let Some(stmt) =
+                  self.create_import_binding_stmt(&self.modules()[importee_idx], &binding_name)
+                {
                   program_body.push(stmt);
                 }
-                props.push(self.ast_factory.make_lazy_export_property(
-                  &exported,
-                  import_binding.to_expression(&self.ast_factory),
-                  !is_validate_identifier_name(&exported),
-                ));
               }
-              self.exports.extend(props);
-            } else if let Some(decl) = &mut decl.declaration {
-              match decl {
-                ast::Declaration::VariableDeclaration(var_decl) => {
-                  for decl in &var_decl.declarations {
-                    for ident in decl.id.get_binding_identifiers() {
-                      let name = self.local_binding_name(ident.symbol_id(), ident.name.as_str());
-                      self.exports.push(self.ast_factory.make_lazy_export_property(
-                        ident.name.as_str(),
-                        self.ast_factory.make_id_ref_expr(SPAN, &name),
-                        false,
-                      ));
-                    }
+              return;
+            }
+            let mut props =
+              oxc::allocator::Vec::with_capacity_in(decl.specifiers.len(), &self.ast_factory);
+            for specifier in &decl.specifiers {
+              let local = match &specifier.local {
+                ast::ModuleExportName::IdentifierName(ident) => {
+                  Specifier::Literal(ident.name.into())
+                }
+                ast::ModuleExportName::StringLiteral(str) => Specifier::Literal(str.value.into()),
+                ast::ModuleExportName::IdentifierReference(_) => {
+                  unreachable!(
+                    "IdentifierReference is invalid in re-exported ExportFromDeclaration"
+                  )
+                }
+              };
+              let exported = specifier.exported.name();
+              let Some((import_binding, stmt)) =
+                self.create_import_binding_for_re_export(rec_id, &local, decl.span)
+              else {
+                continue;
+              };
+              if let Some(stmt) = stmt {
+                program_body.push(stmt);
+              }
+              props.push(self.ast_factory.make_lazy_export_property(
+                &exported,
+                import_binding.to_expression(&self.ast_factory),
+                !is_validate_identifier_name(&exported),
+              ));
+            }
+            self.exports.extend(props);
+          }
+          ast::ModuleDeclaration::ExportDeclaration(decl) => {
+            match &mut decl.declaration {
+              ast::Declaration::VariableDeclaration(var_decl) => {
+                for decl in &var_decl.declarations {
+                  for ident in decl.id.get_binding_identifiers() {
+                    let name = self.local_binding_name(ident.symbol_id(), ident.name.as_str());
+                    self.exports.push(self.ast_factory.make_lazy_export_property(
+                      ident.name.as_str(),
+                      self.ast_factory.make_id_ref_expr(SPAN, &name),
+                      false,
+                    ));
                   }
                 }
-                ast::Declaration::FunctionDeclaration(fn_decl) => {
-                  let ident = fn_decl.id.as_ref().expect("exported function should have id");
-                  let id = self.local_binding_name(ident.symbol_id(), ident.name.as_str());
-                  self.exports.push(self.ast_factory.make_lazy_export_property(
-                    ident.name.as_str(),
-                    self.ast_factory.make_id_ref_expr(SPAN, &id),
-                    false,
-                  ));
-                }
-                ast::Declaration::ClassDeclaration(cls_decl) => {
-                  let ident = cls_decl.id.as_ref().expect("exported class should have id");
-                  let id = self.local_binding_name(ident.symbol_id(), ident.name.as_str());
-                  self.exports.push(self.ast_factory.make_lazy_export_property(
-                    ident.name.as_str(),
-                    self.ast_factory.make_id_ref_expr(SPAN, &id),
-                    false,
-                  ));
-                }
-                _ => {}
               }
-              program_body.push(Statement::from(decl.take_in(&self.ast_factory)));
-            } else {
-              for specifier in &decl.specifiers {
-                if let Some(symbol_id) = scoping.get_root_binding(specifier.local.name().into()) {
-                  self
-                    .named_exports
-                    .insert(specifier.exported.name(), NamedExport { local_binding: symbol_id });
-                }
+              ast::Declaration::FunctionDeclaration(fn_decl) => {
+                let ident = fn_decl.id.as_ref().expect("exported function should have id");
+                let id = self.local_binding_name(ident.symbol_id(), ident.name.as_str());
+                self.exports.push(self.ast_factory.make_lazy_export_property(
+                  ident.name.as_str(),
+                  self.ast_factory.make_id_ref_expr(SPAN, &id),
+                  false,
+                ));
+              }
+              ast::Declaration::ClassDeclaration(cls_decl) => {
+                let ident = cls_decl.id.as_ref().expect("exported class should have id");
+                let id = self.local_binding_name(ident.symbol_id(), ident.name.as_str());
+                self.exports.push(self.ast_factory.make_lazy_export_property(
+                  ident.name.as_str(),
+                  self.ast_factory.make_id_ref_expr(SPAN, &id),
+                  false,
+                ));
+              }
+              _ => {}
+            }
+            program_body.push(Statement::from(decl.declaration.take_in(&self.ast_factory)));
+          }
+          ast::ModuleDeclaration::ExportNamedDeclaration(decl) => {
+            for specifier in &decl.specifiers {
+              if let Some(symbol_id) = scoping.get_root_binding(specifier.local.name().into()) {
+                self
+                  .named_exports
+                  .insert(specifier.exported.name(), NamedExport { local_binding: symbol_id });
               }
             }
           }
@@ -782,9 +784,7 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
 
   fn should_include_re_export_for_runtime_execution(&self, stmt: &Statement<'_>) -> bool {
     let rec_id = match stmt {
-      Statement::ExportNamedDeclaration(decl) if decl.source.is_some() => {
-        self.ctx.module.imports[&decl.node_id()]
-      }
+      Statement::ExportFromDeclaration(decl) => self.ctx.module.imports[&decl.node_id()],
       Statement::ExportAllDeclaration(decl) => self.ctx.module.imports[&decl.node_id()],
       _ => return false,
     };
@@ -796,7 +796,7 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
     let call = Expression::new_call_expression(
       span,
       self.ast_factory.make_member_access_expr(ROLLIPOP_REQUIRE_NAME, "re"),
-      NONE,
+      None,
       oxc::allocator::Vec::from_array_in(
         [
           ast::Argument::from(self.ast_factory.make_id_ref_expr(SPAN, ROLLIPOP_EXPORTS_NAME)),
@@ -814,7 +814,7 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
     let call = Expression::new_call_expression(
       SPAN,
       self.ast_factory.make_member_access_expr(ROLLIPOP_REQUIRE_NAME, "r"),
-      NONE,
+      None,
       oxc::allocator::Vec::from_value_in(
         ast::Argument::from(self.ast_factory.make_id_ref_expr(SPAN, ROLLIPOP_EXPORTS_NAME)),
         &self.ast_factory,
@@ -857,7 +857,7 @@ impl<'me, 'ast> RollipopAstFinalizer<'me, 'ast> {
     let call = Expression::new_call_expression(
       SPAN,
       self.ast_factory.make_member_access_expr(ROLLIPOP_REQUIRE_NAME, "d"),
-      NONE,
+      None,
       oxc::allocator::Vec::from_array_in(
         [
           ast::Argument::from(self.ast_factory.make_id_ref_expr(SPAN, ROLLIPOP_EXPORTS_NAME)),
@@ -1194,9 +1194,5 @@ fn make_import_access_expr_for_object<'ast>(
 }
 
 fn is_export_specifier_declaration(stmt: &Statement<'_>) -> bool {
-  matches!(
-    stmt,
-    Statement::ExportNamedDeclaration(decl)
-      if decl.source.is_none() && decl.declaration.is_none()
-  )
+  matches!(stmt, Statement::ExportNamedDeclaration(_))
 }

@@ -105,6 +105,10 @@ impl ResolvedTransformOptions {
       .react_compiler
       .as_ref()
       .is_some_and(|react_compiler| !react_compiler.should_transform(file_path, cwd));
+    let react_compiler = (!should_disable_react_compiler)
+      .then(|| self.react_compiler.clone())
+      .flatten()
+      .map(Into::into);
 
     // MARK: - Rollipop
     let should_disable_react_refresh = self
@@ -113,24 +117,21 @@ impl ResolvedTransformOptions {
       .is_some_and(|react_refresh| !react_refresh.should_transform(file_path, cwd));
 
     if !should_disable_react_compiler && !should_disable_react_refresh {
-      return TransformOptionsForFile { options: Arc::clone(&self.options) };
+      return TransformOptionsForFile { options: Arc::clone(&self.options), react_compiler };
     }
 
     let mut options = self.options.as_ref().clone();
-    // MARK: - Rollipop
-    if should_disable_react_compiler {
-      options.react_compiler = None;
-    }
     if should_disable_react_refresh {
       options.jsx.refresh = None;
     }
-    TransformOptionsForFile { options: Arc::new(options) }
+    TransformOptionsForFile { options: Arc::new(options), react_compiler }
   }
 }
 
 #[derive(Debug, Clone)]
 pub struct TransformOptionsForFile {
   options: Arc<OxcTransformOptions>,
+  pub react_compiler: Option<oxc_react_compiler::PluginOptions>,
 }
 
 impl Deref for TransformOptionsForFile {

@@ -34,6 +34,7 @@ use crate::inner_bundler_options::types::transform_option::{
   TransformOptions, TypeScriptOptions,
 };
 use crate::inner_bundler_options::types::tsconfig_merge::merge_transform_options_with_tsconfig;
+use crate::utils::react_compiler::run_react_compiler;
 
 pub type InjectOptions = Vec<(String, Either<String, Vec<String>>)>;
 
@@ -317,6 +318,7 @@ pub fn enhanced_transform(
       jsx.compiler = None;
     }
   }
+  let react_compiler = merged_options.react_compiler().cloned().map(Into::into);
   let declaration_options =
     merged_options.typescript.as_ref().and_then(|ts| ts.declaration.clone());
 
@@ -398,9 +400,27 @@ pub fn enhanced_transform(
     }
   }
 
-  let scoping = scoping
+  let mut scoping = scoping
     .take()
     .unwrap_or_else(|| semantic_builder_for_transform().build(&program).semantic.into_scoping());
+
+  let (react_compiler_scoping, react_compiler_diagnostics) =
+    run_react_compiler(&allocator, &mut program, react_compiler);
+  if !react_compiler_diagnostics.is_empty() {
+    append_oxc_diagnostics(
+      react_compiler_diagnostics,
+      &source,
+      filename,
+      &mut warnings,
+      &mut errors,
+    );
+    if !errors.is_empty() {
+      return EnhancedTransformResult::new_for_error(errors, warnings, tsconfig_file_paths);
+    }
+  }
+  if let Some(react_compiler_scoping) = react_compiler_scoping {
+    scoping = react_compiler_scoping;
+  }
 
   let transform_ret = Transformer::new(&allocator, Path::new(filename), &oxc_transform_options)
     .build_with_scoping(scoping, &mut program);
