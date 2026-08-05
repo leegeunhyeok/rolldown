@@ -51,12 +51,9 @@ impl PluginDriver {
     skip_all
   )]
   pub async fn build_start(&self, opts: &SharedNormalizedBundlerOptions) -> HookNoopReturn {
-    for (plugin_idx, plugin, ctx) in
-      self.iter_plugin_with_context_by_order(&self.order_by_build_start_meta)
+    for (_, plugin, ctx) in self.iter_plugin_with_context_by_order(&self.order_by_build_start_meta)
     {
-      let start = self.start_timing();
       let result = plugin.call_build_start(ctx, &crate::HookBuildStartArgs { options: opts }).await;
-      self.record_timing(plugin_idx, start);
       result.with_context(|| CausedPlugin::new(plugin.call_name()))?;
     }
 
@@ -105,6 +102,14 @@ impl PluginDriver {
       if skipped_plugins.has_bit(plugin_idx) {
         continue;
       }
+      if should_skip_plugin_for_lazy_proxy(
+        self.should_skip_user_plugins_for_lazy_proxy_modules,
+        args.specifier,
+        plugin_idx,
+        self.lazy_compilation_plugin_idx,
+      ) {
+        continue;
+      }
       let ret = async {
         trace_action!(action::HookResolveIdCallStart {
           action: "HookResolveIdCallStart",
@@ -116,7 +121,6 @@ impl PluginDriver {
           trigger: "${hook_resolve_id_trigger}",
           call_id: "${call_id}",
         });
-        let start = self.start_timing();
         let result = plugin
           .call_resolve_id(
             &skipped_resolve_calls.map_or_else(
@@ -128,7 +132,6 @@ impl PluginDriver {
             args,
           )
           .await;
-        self.record_timing(plugin_idx, start);
         if let Some(r) = result? {
           trace_action!(action::HookResolveIdCallEnd {
             action: "HookResolveIdCallEnd",
@@ -190,7 +193,6 @@ impl PluginDriver {
       if skipped_plugins.has_bit(plugin_idx) {
         continue;
       }
-      let start = self.start_timing();
       let result = plugin
         .call_resolve_dynamic_import(
           &skipped_resolve_calls.map_or_else(
@@ -202,7 +204,6 @@ impl PluginDriver {
           args,
         )
         .await;
-      self.record_timing(plugin_idx, start);
       if let Some(r) = result.with_context(|| CausedPlugin::new(plugin.call_name()))? {
         return Ok(Some(r));
       }
@@ -236,9 +237,7 @@ impl PluginDriver {
           call_id: "${call_id}",
         });
         let load_ctx = Arc::new(LoadPluginContext::new(ctx.clone(), args.module_idx));
-        let start = self.start_timing();
         let result = plugin.call_load(load_ctx, args).await;
-        self.record_timing(plugin_idx, start);
         if let Some(r) = result? {
           trace_action!(action::HookLoadCallEnd {
             action: "HookLoadCallEnd",
@@ -334,7 +333,6 @@ impl PluginDriver {
         plugin_id: plugin_idx.raw(),
         call_id: call_id.clone().unwrap_or_default(),
       });
-      let start = self.start_timing();
       let result = plugin
         .call_transform(
           Arc::new(TransformPluginContext::new(
@@ -349,7 +347,6 @@ impl PluginDriver {
           &HookTransformArgs { id, code: code_arc_ref, module_type: &*module_type },
         )
         .await;
-      self.record_timing(plugin_idx, start);
       if let Some(r) = result.with_context(|| CausedPlugin::new(plugin.call_name()))? {
         original_sourcemap_chain = plugin_sourcemap_chain.into_inner();
         let map_was_omitted = matches!(r.map, crate::HookTransformOutputMap::Omitted);
@@ -471,11 +468,11 @@ impl PluginDriver {
         is_user_defined_entry: args.is_user_defined_entry,
         module_type: args.module_type,
       };
-      args.ast = plugin
+      let result = plugin
         .call_transform_ast(ctx, transform_args)
         .instrument(debug_span!("transform_ast_hook", plugin_name = plugin.call_name().as_ref()))
-        .await
-        .with_context(|| CausedPlugin::new(plugin.call_name()))?;
+        .await;
+      args.ast = result.with_context(|| CausedPlugin::new(plugin.call_name()))?;
     }
     Ok(args.ast)
   }
@@ -502,9 +499,7 @@ impl PluginDriver {
       ) {
         continue;
       }
-      let start = self.start_timing();
       let result = plugin.call_module_parsed(ctx, Arc::clone(&module_info), normal_module).await;
-      self.record_timing(plugin_idx, start);
       result.with_context(|| CausedPlugin::new(plugin.call_name()))?;
     }
     Ok(())
@@ -516,12 +511,8 @@ impl PluginDriver {
     skip_all
   )]
   pub async fn build_end(&self, args: Option<&HookBuildEndArgs<'_>>) -> HookNoopReturn {
-    for (plugin_idx, plugin, ctx) in
-      self.iter_plugin_with_context_by_order(&self.order_by_build_end_meta)
-    {
-      let start = self.start_timing();
+    for (_, plugin, ctx) in self.iter_plugin_with_context_by_order(&self.order_by_build_end_meta) {
       let result = plugin.call_build_end(ctx, args).await;
-      self.record_timing(plugin_idx, start);
       result.with_context(|| CausedPlugin::new(plugin.call_name()))?;
     }
 
@@ -536,12 +527,10 @@ impl PluginDriver {
   // MARK - rollipop
 
   pub async fn transform_cache_hit(&self, id: &str) -> HookNoopReturn {
-    for (plugin_idx, plugin, ctx) in
+    for (_, plugin, ctx) in
       self.iter_plugin_with_context_by_order(&self.order_by_transform_cache_hit_meta)
     {
-      let start = self.start_timing();
       let result = plugin.call_transform_cache_hit(ctx, id).await;
-      self.record_timing(plugin_idx, start);
       result.with_context(|| CausedPlugin::new(plugin.call_name()))?;
     }
     Ok(())

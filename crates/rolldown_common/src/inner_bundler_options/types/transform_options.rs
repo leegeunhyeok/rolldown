@@ -155,12 +155,68 @@ pub enum TransformOptionsInner {
   Normal(Arc<ResolvedTransformOptions>),
 }
 
+/// Every ES feature `oxc_transformer` is able to lower.
+///
+/// This mirrors oxc's `impl From<EngineTargets> for EnvOptions`: a feature belongs
+/// here exactly when that impl turns it into a transform flag. Features oxc merely
+/// knows about but cannot lower — the ES2025 RegExp ones — must stay out, or plain
+/// JS files would pay for a transform pass that cannot change anything.
+///
+/// Keep this in sync when upgrading oxc. A missing entry silently stops lowering
+/// that syntax in plain JS files, which is how `using` declarations survived an
+/// `es2024` target. `tests::env_lowers_anything` below stops compiling when oxc
+/// grows a new `EnvOptions` group, so the list gets revisited.
+const LOWERABLE_ES_FEATURES: &[ESFeature] = &[
+  ESFeature::ES2026ExplicitResourceManagement,
+  ESFeature::ES2022ClassStaticBlock,
+  ESFeature::ES2022ClassProperties,
+  ESFeature::ES2022TopLevelAwait,
+  ESFeature::ES2021LogicalAssignmentOperators,
+  ESFeature::ES2020ExportNamespaceFrom,
+  ESFeature::ES2020NullishCoalescingOperator,
+  ESFeature::ES2020OptionalChaining,
+  ESFeature::ES2020BigInt,
+  ESFeature::ES2020ArbitraryModuleNamespaceNames,
+  ESFeature::ES2019OptionalCatchBinding,
+  ESFeature::ES2018ObjectRestSpread,
+  ESFeature::ES2018AsyncGeneratorFunctions,
+  ESFeature::ES2017AsyncToGenerator,
+  ESFeature::ES2016ExponentiationOperator,
+  ESFeature::ES2015ArrowFunctions,
+  ESFeature::ES2015StickyRegex,
+  ESFeature::ES2015UnicodeRegex,
+  ESFeature::ES2018UnicodePropertyRegex,
+  ESFeature::ES2018DotallRegex,
+  ESFeature::ES2018NamedCapturingGroupsRegex,
+  ESFeature::ES2018LookbehindRegex,
+  ESFeature::ES2022MatchIndicesRegex,
+  ESFeature::ES2024UnicodeSetsRegex,
+];
+
+/// Whether `target` leaves the transformer anything to lower.
+///
+/// `target` is the single source both `Normal` env options and `Raw` per-file
+/// options are derived from, so it answers for both [`TransformOptionsInner`]
+/// variants: tsconfig merging never touches it, and oxc builds `EnvOptions` from
+/// it with the very same [`EngineTargets::has_feature`] calls made here.
+fn target_needs_js_transform(target: &EngineTargets) -> bool {
+  LOWERABLE_ES_FEATURES.iter().any(|feature| target.has_feature(*feature))
+}
+
 #[derive(Debug, Clone)]
 pub struct TransformOptions {
   inner: TransformOptionsInner,
   pub target: EngineTargets,
   pub jsx_preset: JsxPreset,
   cwd: String,
+  /// Whether plain JS files have to go through the transformer. TS and JSX always
+  /// do, regardless of the target.
+  ///
+  /// Derived from `target` by the constructors rather than recomputed on demand:
+  /// it is read once per JS module, and answering it walks oxc's static feature
+  /// table once per entry in [`LOWERABLE_ES_FEATURES`]. Set it from
+  /// [`target_needs_js_transform`] if you ever build this struct by hand.
+  pub should_transform_js: bool,
 }
 
 impl Deref for TransformOptions {
@@ -185,11 +241,13 @@ impl TransformOptions {
     jsx_preset: JsxPreset,
     cwd: &Path,
   ) -> Self {
+    let should_transform_js = target_needs_js_transform(&target) || options.has_react_compiler();
     Self {
       inner: TransformOptionsInner::Normal(Arc::new(options)),
       target,
       jsx_preset,
       cwd: cwd.to_string_lossy().into_owned(),
+      should_transform_js,
     }
   }
 
@@ -200,11 +258,14 @@ impl TransformOptions {
     jsx_preset: JsxPreset,
     cwd: &Path,
   ) -> Self {
+    let should_transform_js =
+      target_needs_js_transform(&target) || raw.base_options.react_compiler().is_some();
     Self {
       inner: TransformOptionsInner::Raw(raw),
       target,
       jsx_preset,
       cwd: cwd.to_string_lossy().into_owned(),
+      should_transform_js,
     }
   }
 
@@ -219,15 +280,7 @@ impl TransformOptions {
   }
 
   pub fn should_transform_js(&self) -> bool {
-    match &self.inner {
-      TransformOptionsInner::Normal(opts) => {
-        opts.options.env.regexp.set_notation || opts.has_react_compiler()
-      }
-      TransformOptionsInner::Raw(raw) => {
-        self.target.has_feature(ESFeature::ES2024UnicodeSetsRegex)
-          || raw.base_options.react_compiler().is_some()
-      }
-    }
+    self.should_transform_js
   }
 
   pub fn options_for_file(
@@ -284,15 +337,18 @@ impl TransformOptions {
 
 impl Default for TransformOptions {
   fn default() -> Self {
+    let target = EngineTargets::default();
+    let should_transform_js = target_needs_js_transform(&target);
     Self {
       inner: TransformOptionsInner::Normal(Arc::new(ResolvedTransformOptions::new(
         OxcTransformOptions::default(),
         None,
         None,
       ))),
-      target: EngineTargets::default(),
+      target,
       jsx_preset: JsxPreset::default(),
       cwd: String::new(),
+      should_transform_js,
     }
   }
 }
@@ -333,5 +389,145 @@ fn extract_react_refresh_options(
       _ => None,
     },
     _ => None,
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use oxc::transformer::{
+    ES2015Options, ES2016Options, ES2017Options, ES2018Options, ES2019Options, ES2020Options,
+    ES2021Options, ES2022Options, ES2026Options, EnvOptions,
+  };
+
+  use super::*;
+
+  fn default_resolved_options() -> ResolvedTransformOptions {
+    ResolvedTransformOptions::new(OxcTransformOptions::default(), None, None)
+  }
+
+  /// [`LOWERABLE_ES_FEATURES`] read from the other side: given the options oxc
+  /// derived for a target, is there anything for the transformer to lower?
+  ///
+  /// `EnvOptions` and its ES-edition groups are destructured exhaustively on
+  /// purpose. When an oxc upgrade adds a group — as ES2026 once was — this stops
+  /// compiling, which is the prompt to add the feature behind it to
+  /// [`LOWERABLE_ES_FEATURES`].
+  fn env_lowers_anything(env: EnvOptions) -> bool {
+    let EnvOptions {
+      // Driven by the TypeScript transform rather than by `target`.
+      module: _,
+      es2026: ES2026Options { explicit_resource_management },
+      es2022: ES2022Options { class_static_block, class_properties, top_level_await },
+      es2021: ES2021Options { logical_assignment_operators },
+      es2020:
+        ES2020Options {
+          export_namespace_from,
+          nullish_coalescing_operator,
+          optional_chaining,
+          big_int,
+          arbitrary_module_namespace_names,
+        },
+      es2019: ES2019Options { optional_catch_binding },
+      es2018: ES2018Options { object_rest_spread, async_generator_functions },
+      es2017: ES2017Options { async_to_generator },
+      es2016: ES2016Options { exponentiation_operator },
+      es2015: ES2015Options { arrow_function },
+      // `RegExpOptions` lives in a private oxc module, so it cannot be named in a
+      // pattern and its flags are read field by field below. A brand new RegExp
+      // lowering would slip past this canary; the ES-edition groups above are the
+      // ones that actually grow.
+      regexp,
+    } = env;
+
+    explicit_resource_management
+      || class_static_block
+      || class_properties.is_some()
+      || top_level_await
+      || logical_assignment_operators
+      || export_namespace_from
+      || nullish_coalescing_operator
+      || optional_chaining
+      || big_int
+      || arbitrary_module_namespace_names
+      || optional_catch_binding
+      || object_rest_spread.is_some()
+      || async_generator_functions
+      || async_to_generator
+      || exponentiation_operator
+      || arrow_function.is_some()
+      || regexp.sticky_flag
+      || regexp.unicode_flag
+      || regexp.unicode_property_escapes
+      || regexp.dot_all_flag
+      || regexp.named_capture_groups
+      || regexp.look_behind_assertions
+      || regexp.match_indices
+      || regexp.set_notation
+  }
+
+  /// The gate must agree with the options oxc hands the transformer. Saying
+  /// `false` while a flag is set skips lowering the target cannot run; saying
+  /// `true` while every flag is clear runs a pass that changes nothing.
+  #[test]
+  fn should_transform_js_matches_oxc_env_options() {
+    for target in [
+      "es2015",
+      "es2016",
+      "es2017",
+      "es2018",
+      "es2019",
+      "es2020",
+      "es2021",
+      "es2022",
+      "es2023",
+      "es2024",
+      "es2025",
+      "es2026",
+      "esnext",
+      // Engine targets do not compare as a single version: Chrome 133 ships
+      // unicode-sets RegExp but not `using`, Chrome 134 ships both.
+      "chrome133",
+      "chrome134",
+      "firefox140",
+      "firefox141",
+      "node22",
+      "node24",
+    ] {
+      let engine_targets = EngineTargets::from_target(target).expect("target should parse");
+      let options = TransformOptions::new(
+        default_resolved_options(),
+        engine_targets.clone(),
+        JsxPreset::default(),
+        Path::new(""),
+      );
+
+      assert_eq!(
+        options.should_transform_js,
+        env_lowers_anything(EnvOptions::from(engine_targets)),
+        "`should_transform_js` disagrees with oxc's env options for target `{target}`"
+      );
+    }
+  }
+
+  /// The regression behind [`LOWERABLE_ES_FEATURES`]: `es2024` supports
+  /// unicode-sets RegExp, so a gate keyed on that feature alone left `using`
+  /// declarations unlowered.
+  #[test]
+  fn target_below_es2026_still_lowers_using() {
+    for target in ["es2024", "es2025", "chrome133"] {
+      let engine_targets = EngineTargets::from_target(target).expect("target should parse");
+      let options = TransformOptions::new(
+        default_resolved_options(),
+        engine_targets,
+        JsxPreset::default(),
+        Path::new(""),
+      );
+      assert!(options.should_transform_js, "target `{target}` must lower `using`");
+    }
+  }
+
+  #[test]
+  fn no_target_skips_the_transformer() {
+    assert!(!TransformOptions::default().should_transform_js);
   }
 }
