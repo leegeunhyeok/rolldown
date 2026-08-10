@@ -1,4 +1,12 @@
 
+## [1.0.27] - 2026-08-10
+
+### ⚙️ Miscellaneous Tasks
+
+- sync upstream rolldown v1.2.3 by `@leegeunhyeok`
+- sync upstream rolldown v1.2.2 by `@leegeunhyeok`
+
+
 ## [1.0.26] - 2026-07-31
 
 ### ⚙️ Miscellaneous Tasks
