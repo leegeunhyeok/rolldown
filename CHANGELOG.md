@@ -1,4 +1,12 @@
 
+## [1.0.28] - 2026-08-13
+
+### ⚙️ Miscellaneous Tasks
+
+- update generated oxc runtime helpers by `@leegeunhyeok`
+- sync upstream rolldown v1.2.4 by `@leegeunhyeok`
+
+
 ## [1.2.4] - 2026-08-12
 
 ### 🚀 Features
