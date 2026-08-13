@@ -44,13 +44,7 @@
         "src/api/experimental.ts",
       ],
       "ignore": ["src/binding.cjs"],
-      "ignoreDependencies": [
-        "@emnapi/core",
-        "@napi-rs/wasm-runtime",
-        "@rollup/plugin-json",
-        "buble",
-        "pathe",
-      ],
+      "ignoreDependencies": ["@napi-rs/wasm-runtime", "@rollup/plugin-json", "buble", "pathe"],
     },
     "packages/rolldown/tests": {
       "entry": ["*/**"],
