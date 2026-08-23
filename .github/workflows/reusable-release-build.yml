@@ -15,6 +15,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Keep the fork release surface limited to the NAPI packages we publish.
+          # Upstream Android/OHOS/FreeBSD/etc. targets are intentionally omitted.
           - os: macos-latest
             target: x86_64-apple-darwin
             build: vp run ci:build-release-binding --target x86_64-apple-darwin
@@ -63,11 +65,7 @@ jobs:
         with:
           version: 0.15.2
 
-      - name: Setup OpenHarmony SDK
-        if: ${{ contains(matrix.target, 'ohos') }}
-        uses: Boshen/setup-ohos-sdk@edb865a89a712f1f15dbad932dfa9cfce849d95c # v1.0.0
-
-      - uses: taiki-e/install-action@91ddec75689c4c78665b598d188dc821c5a43e5c # v2.85.9
+      - uses: taiki-e/install-action@82cd3e7658a6f96c86c0234aeeda1748937cb0a1 # v2.85.13
         if: ${{ contains(matrix.target, 'musl') }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -102,7 +100,7 @@ jobs:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
       - name: Build
         id: build
-        uses: cross-platform-actions/action@be3d7e9ff5c8770b9c51b1a8c8c5446e1cad7cf9 # v1.2.0
+        uses: cross-platform-actions/action@24ef01df165c76df1ed2b9f9e9212e78dc2fc963 # v1.4.0
         env:
           DEBUG: napi:*
           RUSTUP_IO_THREADS: 1

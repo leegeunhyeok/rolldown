@@ -4,15 +4,18 @@ export type { DevOptions, DevWatchOptions } from './api/dev/dev-options';
 export { freeExternalMemory, scan } from './api/experimental';
 export {
   type BindingClientHmrUpdate,
+  type BindingNativeMemoryStats,
   BindingRebuildStrategy,
   clearCache,
   clearCacheById,
+  getNativeMemoryStats,
   isolatedDeclaration,
   type IsolatedDeclarationsOptions,
   type IsolatedDeclarationsResult,
   isolatedDeclarationSync,
   moduleRunnerTransform,
   type NapiResolveOptions as ResolveOptions,
+  resetNativeMemoryStats,
   type ResolveResult,
   ResolverFactory,
 } from './binding.cjs';

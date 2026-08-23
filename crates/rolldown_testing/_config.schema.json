@@ -1540,6 +1540,12 @@
             "boolean",
             "null"
           ]
+        },
+        "namespaceConflict": {
+          "type": [
+            "boolean",
+            "null"
+          ]
         }
       },
       "additionalProperties": false
