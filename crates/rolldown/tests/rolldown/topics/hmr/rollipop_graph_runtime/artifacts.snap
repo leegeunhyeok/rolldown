@@ -132,8 +132,8 @@ __rolldown_runtime__.registerFactory("main.js", "esm", (function(__rolldown_modu
 		var __rolldown_exports__ = __rolldown_runtime__.__exportAll({});
 		__rolldown_runtime__.registerModule(__rolldown_module_id__, { exports: __rolldown_exports__ });
 		__rolldown_runtime__.initModule("dep.js");
-		const hot_main = __rolldown_runtime__.createModuleHotContext(__rolldown_module_id__);
 		var import_dep_10 = __rolldown_runtime__.loadExports("dep.js");
+		const hot_main = __rolldown_runtime__.createModuleHotContext(__rolldown_module_id__);
 		globalThis.__rollipop_hmr_message = import_dep_10.message;
 	} finally {}
 }));

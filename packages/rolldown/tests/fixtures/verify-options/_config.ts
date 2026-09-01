@@ -42,6 +42,11 @@ export default defineTest({
       preserveModulesRoot: 'src',
       virtualDirname: 'virtual',
       minifyInternalExports: true,
+      minify: {
+        compress: false,
+        mangle: false,
+        codegen: false,
+      },
     },
     plugins: [
       {

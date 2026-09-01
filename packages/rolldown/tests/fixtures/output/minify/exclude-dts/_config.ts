@@ -6,7 +6,11 @@ export default defineTest({
   sequential: true,
   config: {
     output: {
-      minify: true,
+      minify: {
+        compress: true,
+        mangle: true,
+        codegen: true,
+      },
     },
     plugins: [
       {

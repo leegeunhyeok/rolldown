@@ -3,10 +3,9 @@ use std::fmt::Debug;
 use napi::bindgen_prelude::{TypeName, ValidateNapiValue};
 use napi::{Either, bindgen_prelude::FromNapiValue, sys};
 
+use crate::types::js_regex::JsRegExp;
 use rolldown_utils::js_regex::HybridRegex;
 use rolldown_utils::pattern_filter::StringOrRegex;
-
-use super::js_regex::JsRegExp;
 
 #[derive(Debug, Clone)]
 pub struct BindingStringOrRegex(StringOrRegex);

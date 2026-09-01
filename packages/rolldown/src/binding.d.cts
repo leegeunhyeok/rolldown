@@ -169,6 +169,38 @@ export interface MangleOptionsKeepNames {
   class: boolean
 }
 
+export interface ManglePropertiesOptions {
+  /**
+   * JavaScript `RegExp` selecting property names to mangle. The source and flags are compiled
+   * with Rust's regex engine. Flags `i`, `m`, `s`, and `u` are supported.
+   */
+  include: RegExp
+  /** JavaScript `RegExp` excluding property names selected by `include`. */
+  exclude?: RegExp
+  /** Exact names that are neither mangled nor emitted as automatic output names. */
+  reserved?: Array<string>
+  /**
+   * Mangle quoted property occurrences in addition to unquoted occurrences.
+   *
+   * @default false
+   */
+  quoted?: boolean
+  /**
+   * Generate readable `_$name$_`-style output names.
+   *
+   * @default false
+   */
+  debug?: boolean
+  /**
+   * Stable mappings from original names to output names. `false` reserves an original name.
+   * Entries that do not match `include`, or that match `exclude`, remain inert but are
+   * preserved in the returned `mangleCache`. String targets must be `IdentifierName` values
+   * other than `__proto__`, `constructor`, or `prototype`. The original name `__proto__` is
+   * always reserved and cannot be used as a cache key.
+   */
+  cache?: Record<string, string | false>
+}
+
 /**
  * Minify asynchronously.
  *
@@ -181,6 +213,12 @@ export interface MinifyOptions {
   module?: boolean
   compress?: boolean | CompressOptions
   mangle?: boolean | MangleOptions
+  /**
+   * Mangle matching property names independently of identifier mangling. Properties owned by
+   * unminified code, imported module namespaces, globals, or host APIs must be excluded or
+   * reserved.
+   */
+  mangleProps?: ManglePropertiesOptions
   codegen?: boolean | CodegenOptions
   sourcemap?: boolean
 }
@@ -194,6 +232,11 @@ export interface MinifyResult {
    * Only populated when `codegen.legalComments` is `"linked"` or `"external"`.
    */
   legalComments: Array<string>
+  /**
+   * Updated property-name cache sorted by original name. Present when `mangleProps` ran on a
+   * parse without errors.
+   */
+  mangleCache?: Record<string, string | false>
 }
 
 /** Minify synchronously. */
@@ -1584,6 +1627,12 @@ export declare class BindingDevEngine {
    * actual module and its dependencies.
    */
   compileEntry(moduleId: string, clientId: string): Promise<BindingLazyChunkOutput>
+  /**
+   * Same data the plugin-context `getModuleInfo` returns, readable from the engine
+   * handle at any time (no hook context needed).
+   */
+  getModuleInfo(moduleId: string): BindingModuleInfo | null
+  getModuleIds(): Array<string>
 }
 
 export declare class BindingLoadPluginContext {
@@ -1886,8 +1935,8 @@ export declare class TraceSubscriberGuard {
 }
 
 export declare class TsconfigCache {
-  /** Create a new transform cache with auto tsconfig discovery enabled. */
-  constructor(yarnPnp: boolean)
+  /** Create a new transform cache with auto or manual tsconfig discovery enabled. */
+  constructor(yarnPnp: boolean, pathToTsconfig?: string | undefined | null)
   /**
    * Clear the cache.
    *
@@ -2170,9 +2219,10 @@ export interface BindingEnhancedTransformOptions {
   /**
    * Configure tsconfig handling.
    * - true: Auto-discover and load the nearest tsconfig.json
+   * - string: Use the tsconfig at the provided path
    * - TsconfigRawOptions: Use the provided inline tsconfig options
    */
-  tsconfig?: boolean | BindingTsconfigRawOptions
+  tsconfig?: boolean | string | BindingTsconfigRawOptions
   /** An input source map to collapse with the output source map. */
   inputMap?: SourceMap
 }
@@ -2588,8 +2638,8 @@ export interface BindingManualCodeSplittingOptions {
 }
 
 export interface BindingMatchGroup {
-  name: string | ((id: string, ctx: BindingChunkingContext) => VoidNullable<string>)
-  test?: string | RegExp | ((id: string) => VoidNullable<boolean>)
+  name: string | ((ids: Array<string>, ctx: BindingChunkingContext) => Array<VoidNullable<string>>)
+  test?: string | RegExp | ((ids: Array<string>) => Uint8Array)
   priority?: number
   minSize?: number
   minShareCount?: number
@@ -2686,6 +2736,7 @@ export interface BindingOutputOptions {
 export interface BindingOutputs {
   chunks: Array<BindingOutputChunk>
   assets: Array<BindingOutputAsset>
+  mangleCache?: Record<string, string | false>
 }
 
 export interface BindingOverwriteOptions {
@@ -2753,9 +2804,9 @@ export interface BindingPluginOptions {
   renderStartMeta?: BindingPluginHookMeta
   renderError?: (ctx: BindingPluginContext, error: BindingError[]) => void
   renderErrorMeta?: BindingPluginHookMeta
-  generateBundle?: (ctx: BindingPluginContext, bundle: BindingErrorsOr<BindingOutputs>, isWrite: boolean, opts: BindingNormalizedOptions) => MaybePromise<VoidNullable<JsChangedOutputs>>
+  generateBundle?: (ctx: BindingPluginContext, bundle: BindingResult<BindingOutputs>, isWrite: boolean, opts: BindingNormalizedOptions) => MaybePromise<VoidNullable<JsChangedOutputs>>
   generateBundleMeta?: BindingPluginHookMeta
-  writeBundle?: (ctx: BindingPluginContext, bundle: BindingErrorsOr<BindingOutputs>, opts: BindingNormalizedOptions) => MaybePromise<VoidNullable<JsChangedOutputs>>
+  writeBundle?: (ctx: BindingPluginContext, bundle: BindingResult<BindingOutputs>, opts: BindingNormalizedOptions) => MaybePromise<VoidNullable<JsChangedOutputs>>
   writeBundleMeta?: BindingPluginHookMeta
   closeBundle?: (ctx: BindingPluginContext, error?: BindingError[]) => MaybePromise<VoidNullable>
   closeBundleMeta?: BindingPluginHookMeta
@@ -3214,6 +3265,7 @@ export interface BindingViteReporterPluginConfig {
 
 export interface BindingViteResolvePluginConfig {
   resolveOptions: BindingViteResolvePluginResolveOptions
+  tsconfig?: string
   environmentConsumer: string
   environmentName: string
   builtins: Array<BindingStringOrRegex>
@@ -3250,6 +3302,7 @@ export interface BindingViteResolvePluginResolveOptions {
 
 export interface BindingViteTransformPluginConfig {
   root: string
+  tsconfig?: string
   include?: Array<BindingStringOrRegex>
   exclude?: Array<BindingStringOrRegex>
   jsxRefreshInclude?: Array<BindingStringOrRegex>

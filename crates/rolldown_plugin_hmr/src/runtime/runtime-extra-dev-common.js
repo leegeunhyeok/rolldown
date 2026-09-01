@@ -379,9 +379,12 @@ export var DevRuntime = /*#__PURE__*/ function() {
         {
             /**
    * @param {string} id
-   * @param {{ exports: any }} exportsHolder
+   * @param {{ exports: any }} [exportsHolder]
    */ key: "registerModule",
-            value: function registerModule(id, exportsHolder) {
+            value: function registerModule(id) {
+                var exportsHolder = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {
+                    exports: {}
+                };
                 var module = new Module(id);
                 module.exportsHolder = exportsHolder;
                 this.moduleCache.set(id, module);
@@ -479,4 +482,3 @@ export var DevRuntime = /*#__PURE__*/ function() {
     ]);
     return DevRuntime;
 }();
-

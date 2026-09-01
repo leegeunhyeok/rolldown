@@ -28,7 +28,7 @@
     "publint": "^0.3.21",
     "remove-unused-vars": "^0.0.14",
     "typescript": "catalog:",
-    "vite-plus": "^0.2.9"
+    "vite-plus": "^0.3.0"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

@@ -43,6 +43,8 @@ pub type InjectOptions = Vec<(String, Either<String, Vec<String>>)>;
 pub enum TsconfigOption {
   /// Auto-discover tsconfig.json by walking up from the file's directory.
   Auto,
+  /// Use the tsconfig at the provided path.
+  Path(PathBuf),
   /// Use the provided tsconfig directly.
   Config(Arc<TsConfig>),
   /// Don't use tsconfig options.
@@ -259,6 +261,7 @@ fn build_inject_config(
 /// * `source_text` - The source code to transform
 /// * `transform_options` - Transform options including tsconfig and sourcemap settings
 /// * `yarn_pnp` - Whether to enable Yarn PnP support when resolving tsconfig
+#[expect(clippy::too_many_lines)]
 pub fn enhanced_transform(
   filename: &str,
   source_text: &str,
@@ -277,6 +280,29 @@ pub fn enhanced_transform(
       let file_path = PathBuf::from(filename);
       let result = oxc_resolver::Resolver::new(oxc_resolver::ResolveOptions {
         tsconfig: Some(oxc_resolver::TsconfigDiscovery::Auto),
+        yarn_pnp,
+        ..Default::default()
+      })
+      .find_tsconfig(file_path);
+      let found = match result {
+        Ok(found) => found,
+        Err(err) => {
+          errors.push(BuildDiagnostic::tsconfig_error(err));
+          return EnhancedTransformResult::new_for_error(errors, warnings, tsconfig_file_paths);
+        }
+      };
+      if let Some(tsconfig) = &found {
+        tsconfig_file_paths.push(tsconfig.path.clone());
+      }
+      found
+    }
+    Some(TsconfigOption::Path(config_file)) => {
+      let file_path = PathBuf::from(filename);
+      let result = oxc_resolver::Resolver::new(oxc_resolver::ResolveOptions {
+        tsconfig: Some(oxc_resolver::TsconfigDiscovery::Manual(oxc_resolver::TsconfigOptions {
+          config_file: config_file.clone(),
+          references: oxc_resolver::TsconfigReferences::Auto,
+        })),
         yarn_pnp,
         ..Default::default()
       })
