@@ -1,7 +1,7 @@
 use swc_common::DUMMY_SP;
 use swc_common::util::take::Take;
 use swc_ecma_ast::{
-  ArrowExpr, AssignExpr, BinExpr, BlockStmtOrExpr, CallExpr, Expr, Pass, Stmt, TaggedTpl, Tpl,
+  ArrowExpr, ArrowFunctionBody, AssignExpr, BinExpr, CallExpr, Expr, Pass, Stmt, TaggedTpl, Tpl,
   VarDecl, VarDeclKind, VarDeclarator, op,
 };
 use swc_ecma_utils::{ExprFactory, prepend_stmt, private_ident};
@@ -59,7 +59,7 @@ impl TemplateLiteralCaching {
             ArrowExpr {
               span: DUMMY_SP,
               params: vec![t.clone().into()],
-              body: Box::new(BlockStmtOrExpr::Expr(t.into())),
+              body: Box::new(ArrowFunctionBody::Expr(t.into())),
               is_async: false,
               is_generator: false,
               ..Default::default()

@@ -26,29 +26,29 @@ anyhow = { workspace = true }
 memchr = { workspace = true }
 rustc-hash = { workspace = true }
 serde_json = { workspace = true }
-swc_common = { version = "21.0.1", features = ["concurrent", "sourcemap"] }
-swc_ecma_ast = "23.0.0"
-swc_ecma_parser = { version = "39.0.2", features = ["flow"] }
-swc_ecma_codegen = "26.0.1"
-swc_ecma_transforms_base = { version = "42.0.0", features = ["inline-helpers"] }
-swc_ecma_transforms_module = "46.0.0"
-swc_ecma_transforms_optimization = "44.0.0"
-swc_ecma_transforms_react = "46.0.0"
-swc_ecma_transforms_typescript = { version = "46.0.1", features = ["concurrent"] }
-swc_ecma_utils = "29.1.0"
-swc_ecma_compat_common = "38.0.0"
-swc_ecma_compat_es2015 = "46.0.0"
-swc_ecma_compat_es2017 = "43.0.0"
-swc_ecma_compat_es2018 = "44.0.1"
-swc_ecma_compat_es2022 = "45.0.0"
-swc_ecma_visit = "23.0.0"
-swc_react_native = { version = "0.2.0", features = ["codegen", "hermes-v1-fixes", "worklets"] }
+swc_common = { version = "26.0.0", features = ["concurrent", "sourcemap"] }
+swc_ecma_ast = "29.0.0"
+swc_ecma_parser = { version = "45.1.1", features = ["flow"] }
+swc_ecma_codegen = "32.0.0"
+swc_ecma_transforms_base = { version = "49.0.1", features = ["inline-helpers"] }
+swc_ecma_transforms_module = "55.0.1"
+swc_ecma_transforms_optimization = "52.0.0"
+swc_ecma_transforms_react = "55.0.1"
+swc_ecma_transforms_typescript = { version = "55.0.1", features = ["concurrent"] }
+swc_ecma_utils = "35.0.0"
+swc_ecma_compat_common = "45.0.0"
+swc_ecma_compat_es2015 = "55.0.0"
+swc_ecma_compat_es2017 = "50.0.0"
+swc_ecma_compat_es2018 = "51.0.0"
+swc_ecma_compat_es2022 = "53.0.0"
+swc_ecma_visit = "29.0.0"
+swc_react_native = { version = "0.2.1", features = ["codegen", "hermes-v1-fixes", "worklets"] }
 
 # Optional — wasmer-based runtime for user-supplied SWC `.wasm` plugins.
-swc_plugin_runner = { version = "27.0.0", optional = true, features = [
+swc_plugin_runner = { version = "34.0.0", optional = true, features = [
   "ecma",
   "encoding-impl",
   "plugin_transform_schema_v1",
 ] }
-swc_plugin_backend_wasmer = { version = "10.0.0", optional = true }
-swc_plugin_proxy = { version = "23.0.0", optional = true, features = ["plugin-rt"] }
+swc_plugin_backend_wasmer = { version = "17.0.0", optional = true }
+swc_plugin_proxy = { version = "30.0.0", optional = true, features = ["plugin-rt"] }
