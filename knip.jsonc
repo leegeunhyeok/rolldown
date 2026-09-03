@@ -48,7 +48,7 @@
     },
     "packages/rolldown/tests": {
       "entry": ["*/**"],
-      "ignore": ["{cli,fixtures,stability}/**"], // lots of unlisted dependencies
+      "ignore": ["{cli,fixtures,stability}/**", "dev/temp/**"], // lots of unlisted dependencies
       "ignoreUnresolved": ["./world"],
       "ignoreDependencies": [
         "@rolldown/test-dual-format", // used in packages/rolldown/tests/builtin-plugin/vite-resolve.test.ts

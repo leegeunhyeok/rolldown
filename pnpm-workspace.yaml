@@ -39,7 +39,7 @@ overrides:
 
 catalog:
   # upstream rolldown
-  rolldown: 1.2.1
+  rolldown: 1.2.7
   # =================
   '@babel/core': ^7.29.7
   '@babel/preset-env': ^7.29.7
@@ -51,8 +51,8 @@ catalog:
   '@napi-rs/wasm-runtime': ~1.2.2
   '@oxc-node/cli': ^0.1.0
   '@oxc-node/core': ^0.1.0
-  '@oxc-project/runtime': '=0.143.0'
-  '@oxc-project/types': '=0.143.0'
+  '@oxc-project/runtime': '=0.148.0'
+  '@oxc-project/types': '=0.148.0'
   '@pnpm/find-workspace-packages': ^6.0.9
   '@rolldown/pluginutils': ^1.0.0
   '@rollup/plugin-commonjs': ^29.0.0
@@ -87,15 +87,15 @@ catalog:
   glob: ^13.0.0
   lodash-es: ^4.17.21
   micromatch: ^4.0.8
-  oxc-parser: '=0.143.0'
-  oxc-transform: '=0.143.0'
+  oxc-parser: '=0.148.0'
+  oxc-transform: '=0.148.0'
   pathe: ^2.0.3
   react: ^19.0.0
   react-dom: ^19.0.0
   remark-parse: ^11.0.0
-  remeda: ^2.42.0
+  remeda: ^2.45.0
   rolldown-plugin-dts: ^0.28.0
-  rollup: ^4.60.4
+  rollup: ^4.63.0
   semver: ^7.8.0
   serve-static: ^2.0.0
   signal-exit: 4.1.0
@@ -146,22 +146,23 @@ verifyDepsBeforeRun: install
 
 minimumReleaseAgeExclude:
   - '@napi-rs/cli'
-  - '@rolldown/binding-android-arm64@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1'
-  - '@rolldown/binding-darwin-arm64@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1'
-  - '@rolldown/binding-darwin-x64@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1'
-  - '@rolldown/binding-freebsd-x64@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1'
-  - '@rolldown/binding-linux-arm-gnueabihf@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1'
-  - '@rolldown/binding-linux-arm64-gnu@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1'
-  - '@rolldown/binding-linux-arm64-musl@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1'
-  - '@rolldown/binding-linux-ppc64-gnu@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1'
-  - '@rolldown/binding-linux-s390x-gnu@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1'
-  - '@rolldown/binding-linux-x64-gnu@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1'
-  - '@rolldown/binding-linux-x64-musl@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1'
-  - '@rolldown/binding-openharmony-arm64@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1'
-  - '@rolldown/binding-wasm32-wasi@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1'
-  - '@rolldown/binding-win32-arm64-msvc@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1'
-  - '@rolldown/binding-win32-x64-msvc@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1'
-  - rolldown@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1
+  - '@rolldown/binding-android-arm-eabi@1.2.7'
+  - '@rolldown/binding-android-arm64@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1 || 1.2.7'
+  - '@rolldown/binding-darwin-arm64@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1 || 1.2.7'
+  - '@rolldown/binding-darwin-x64@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1 || 1.2.7'
+  - '@rolldown/binding-freebsd-x64@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1 || 1.2.7'
+  - '@rolldown/binding-linux-arm-gnueabihf@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1 || 1.2.7'
+  - '@rolldown/binding-linux-arm64-gnu@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1 || 1.2.7'
+  - '@rolldown/binding-linux-arm64-musl@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1 || 1.2.7'
+  - '@rolldown/binding-linux-ppc64-gnu@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1 || 1.2.7'
+  - '@rolldown/binding-linux-s390x-gnu@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1 || 1.2.7'
+  - '@rolldown/binding-linux-x64-gnu@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1 || 1.2.7'
+  - '@rolldown/binding-linux-x64-musl@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1 || 1.2.7'
+  - '@rolldown/binding-openharmony-arm64@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1 || 1.2.7'
+  - '@rolldown/binding-wasm32-wasi@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1 || 1.2.7'
+  - '@rolldown/binding-win32-arm64-msvc@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1 || 1.2.7'
+  - '@rolldown/binding-win32-x64-msvc@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1 || 1.2.7'
+  - rolldown@1.1.4 || 1.1.5 || 1.2.0 || 1.2.1 || 1.2.7
   - '@oxc-minify/*'
   - '@oxc-parser/*'
   - '@oxc-transform/*'
